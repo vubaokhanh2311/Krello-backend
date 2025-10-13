@@ -1,0 +1,219 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(uuid())
+  name        String
+  email       String   @unique
+  password    String
+  avatarUrl   String? 
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  boardsOwned     Board[]        @relation("BoardOwner")
+  boardMembers    BoardMember[]
+  cardsCreated    Card[]         @relation("CardCreator")
+  cardsAssigned   Card[]         @relation("CardAssignee")
+  comments        Comment[]
+  activities      Activity[]
+  attachments     Attachment[]
+  messages        BoardMessage[]
+  notifications   Notification[]
+}
+
+model Board {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  background  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  ownerId String
+  owner   User      @relation("BoardOwner", fields: [ownerId], references: [id])
+
+  members     BoardMember[]
+  lists       List[]
+  labels      Label[]
+  activities  Activity[]
+  messages    BoardMessage[]
+}
+
+
+model BoardMember {
+  id        String   @id @default(uuid())
+  role      RoleType @default(editor)
+  joinedAt  DateTime @default(now())
+
+  boardId String
+  board   Board @relation(fields: [boardId], references: [id])
+
+  userId  String
+  user    User  @relation(fields: [userId], references: [id])
+}
+
+enum RoleType {
+  owner
+  editor
+  viewer
+}
+
+
+model List {
+  id        String   @id @default(uuid())
+  title     String
+  position  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  boardId String
+  board   Board @relation(fields: [boardId], references: [id])
+
+  cards   Card[]
+}
+
+
+model Card {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  dueDate     DateTime?
+  position    Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  listId String
+  list   List @relation(fields: [listId], references: [id])
+
+  createdBy String
+  creator   User @relation("CardCreator", fields: [createdBy], references: [id])
+
+  assignedTo String?
+  assignee   User? @relation("CardAssignee", fields: [assignedTo], references: [id])
+
+  comments    Comment[]
+  attachments Attachment[]
+  checklists  Checklist[]
+  labels      CardLabel[]
+}
+
+
+model Label {
+  id        String   @id @default(uuid())
+  name      String
+  color     String
+
+  boardId String
+  board   Board @relation(fields: [boardId], references: [id])
+
+  cards   CardLabel[]
+}
+
+
+model CardLabel {
+  cardId  String
+  labelId String
+
+  card  Card  @relation(fields: [cardId], references: [id])
+  label Label @relation(fields: [labelId], references: [id])
+
+  @@id([cardId, labelId])
+}
+
+
+model Checklist {
+  id           String   @id @default(uuid())
+  title        String
+  isCompleted  Boolean  @default(false)
+
+  cardId String
+  card   Card @relation(fields: [cardId], references: [id])
+}
+
+
+model Attachment {
+  id        String   @id @default(uuid())
+  fileName  String
+  fileUrl   String
+  createdAt DateTime @default(now())
+
+  uploadedBy String
+  user       User @relation(fields: [uploadedBy], references: [id])
+
+  cardId String
+  card   Card @relation(fields: [cardId], references: [id])
+}
+
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  createdAt DateTime @default(now())
+
+  cardId String
+  card   Card @relation(fields: [cardId], references: [id])
+
+  userId String
+  user   User @relation(fields: [userId], references: [id])
+}
+
+
+model Activity {
+  id          String   @id @default(uuid())
+  action      String
+  targetType  String
+  targetId    String
+  createdAt   DateTime @default(now())
+
+  boardId String
+  board   Board @relation(fields: [boardId], references: [id])
+
+  userId String
+  user   User @relation(fields: [userId], references: [id])
+}
+
+
+model BoardMessage {
+  id             String       @id @default(uuid())
+  content        String
+  type           MessageType  @default(text)
+  attachmentUrl  String?
+  createdAt      DateTime     @default(now())
+
+  boardId String
+  board   Board @relation(fields: [boardId], references: [id])
+
+  userId  String
+  user    User  @relation(fields: [userId], references: [id])
+}
+
+enum MessageType {
+  text
+  image
+  file
+}
+
+
+model Notification {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User @relation(fields: [userId], references: [id])
+}
