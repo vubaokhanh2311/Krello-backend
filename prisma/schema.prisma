@@ -6,7 +6,6 @@
 
 generator client {
   provider = "prisma-client-js"
-
 }
 
 datasource db {
@@ -15,23 +14,25 @@ datasource db {
 }
 
 model User {
-  id          String   @id @default(uuid())
-  name        String
-  email       String   @unique
-  password    String
-  avatarUrl   String? 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  salt      String?
+  avatarUrl String?
+  googleId  String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  boardsOwned     Board[]        @relation("BoardOwner")
-  boardMembers    BoardMember[]
-  cardsCreated    Card[]         @relation("CardCreator")
-  cardsAssigned   Card[]         @relation("CardAssignee")
-  comments        Comment[]
-  activities      Activity[]
-  attachments     Attachment[]
-  messages        BoardMessage[]
-  notifications   Notification[]
+  boardsOwned   Board[]        @relation("BoardOwner")
+  boardMembers  BoardMember[]
+  cardsCreated  Card[]         @relation("CardCreator")
+  cardsAssigned Card[]         @relation("CardAssignee")
+  comments      Comment[]
+  activities    Activity[]
+  attachments   Attachment[]
+  messages      BoardMessage[]
+  notifications Notification[]
 }
 
 model Board {
@@ -43,26 +44,25 @@ model Board {
   updatedAt   DateTime @updatedAt
 
   ownerId String
-  owner   User      @relation("BoardOwner", fields: [ownerId], references: [id])
+  owner   User   @relation("BoardOwner", fields: [ownerId], references: [id])
 
-  members     BoardMember[]
-  lists       List[]
-  labels      Label[]
-  activities  Activity[]
-  messages    BoardMessage[]
+  members    BoardMember[]
+  lists      List[]
+  labels     Label[]
+  activities Activity[]
+  messages   BoardMessage[]
 }
 
-
 model BoardMember {
-  id        String   @id @default(uuid())
-  role      RoleType @default(editor)
-  joinedAt  DateTime @default(now())
+  id       String   @id @default(uuid())
+  role     RoleType @default(editor)
+  joinedAt DateTime @default(now())
 
   boardId String
-  board   Board @relation(fields: [boardId], references: [id])
+  board   Board  @relation(fields: [boardId], references: [id])
 
-  userId  String
-  user    User  @relation(fields: [userId], references: [id])
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 }
 
 enum RoleType {
@@ -70,7 +70,6 @@ enum RoleType {
   editor
   viewer
 }
-
 
 model List {
   id        String   @id @default(uuid())
@@ -80,29 +79,28 @@ model List {
   updatedAt DateTime @updatedAt
 
   boardId String
-  board   Board @relation(fields: [boardId], references: [id])
+  board   Board  @relation(fields: [boardId], references: [id])
 
-  cards   Card[]
+  cards Card[]
 }
 
-
 model Card {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   title       String
   description String?
   dueDate     DateTime?
   position    Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   listId String
-  list   List @relation(fields: [listId], references: [id])
+  list   List   @relation(fields: [listId], references: [id])
 
   createdBy String
-  creator   User @relation("CardCreator", fields: [createdBy], references: [id])
+  creator   User   @relation("CardCreator", fields: [createdBy], references: [id])
 
   assignedTo String?
-  assignee   User? @relation("CardAssignee", fields: [assignedTo], references: [id])
+  assignee   User?   @relation("CardAssignee", fields: [assignedTo], references: [id])
 
   comments    Comment[]
   attachments Attachment[]
@@ -110,18 +108,16 @@ model Card {
   labels      CardLabel[]
 }
 
-
 model Label {
-  id        String   @id @default(uuid())
-  name      String
-  color     String
+  id    String @id @default(uuid())
+  name  String
+  color String
 
   boardId String
-  board   Board @relation(fields: [boardId], references: [id])
+  board   Board  @relation(fields: [boardId], references: [id])
 
-  cards   CardLabel[]
+  cards CardLabel[]
 }
-
 
 model CardLabel {
   cardId  String
@@ -133,16 +129,14 @@ model CardLabel {
   @@id([cardId, labelId])
 }
 
-
 model Checklist {
-  id           String   @id @default(uuid())
-  title        String
-  isCompleted  Boolean  @default(false)
+  id          String  @id @default(uuid())
+  title       String
+  isCompleted Boolean @default(false)
 
   cardId String
-  card   Card @relation(fields: [cardId], references: [id])
+  card   Card   @relation(fields: [cardId], references: [id])
 }
-
 
 model Attachment {
   id        String   @id @default(uuid())
@@ -151,12 +145,11 @@ model Attachment {
   createdAt DateTime @default(now())
 
   uploadedBy String
-  user       User @relation(fields: [uploadedBy], references: [id])
+  user       User   @relation(fields: [uploadedBy], references: [id])
 
   cardId String
-  card   Card @relation(fields: [cardId], references: [id])
+  card   Card   @relation(fields: [cardId], references: [id])
 }
-
 
 model Comment {
   id        String   @id @default(uuid())
@@ -164,40 +157,38 @@ model Comment {
   createdAt DateTime @default(now())
 
   cardId String
-  card   Card @relation(fields: [cardId], references: [id])
+  card   Card   @relation(fields: [cardId], references: [id])
 
   userId String
-  user   User @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
 }
-
 
 model Activity {
-  id          String   @id @default(uuid())
-  action      String
-  targetType  String
-  targetId    String
-  createdAt   DateTime @default(now())
+  id         String   @id @default(uuid())
+  action     String
+  targetType String
+  targetId   String
+  createdAt  DateTime @default(now())
 
   boardId String
-  board   Board @relation(fields: [boardId], references: [id])
+  board   Board  @relation(fields: [boardId], references: [id])
 
   userId String
-  user   User @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
 }
 
-
 model BoardMessage {
-  id             String       @id @default(uuid())
-  content        String
-  type           MessageType  @default(text)
-  attachmentUrl  String?
-  createdAt      DateTime     @default(now())
+  id            String      @id @default(uuid())
+  content       String
+  type          MessageType @default(text)
+  attachmentUrl String?
+  createdAt     DateTime    @default(now())
 
   boardId String
-  board   Board @relation(fields: [boardId], references: [id])
+  board   Board  @relation(fields: [boardId], references: [id])
 
-  userId  String
-  user    User  @relation(fields: [userId], references: [id])
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 }
 
 enum MessageType {
@@ -205,7 +196,6 @@ enum MessageType {
   image
   file
 }
-
 
 model Notification {
   id        String   @id @default(uuid())
@@ -215,5 +205,5 @@ model Notification {
   createdAt DateTime @default(now())
 
   userId String
-  user   User @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
 }
