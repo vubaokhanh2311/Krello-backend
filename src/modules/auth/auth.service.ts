@@ -5,9 +5,9 @@ import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
 import { User } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
-import { randomUUID } from 'crypto';
+import { JwtTokenService } from './jwt-token.service';
 import { ConfigService } from '@nestjs/config';
-import { JwtPayload } from './interfaces/jwt-payload.interface';
+
 import { ERROR_MESSAGES } from '../../constants/error-messages.constant';
 @Injectable()
 export class AuthService {
@@ -15,6 +15,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
+    private readonly jwtTokenService: JwtTokenService,
   ) {}
 
   async register(
@@ -48,6 +49,7 @@ export class AuthService {
 
   async login(dto: LoginDto) {
     const { email, password } = dto;
+
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user)
       throw new HttpException(
@@ -61,29 +63,13 @@ export class AuthService {
         ERROR_MESSAGES.AUTH.INVALID_PASSWORD,
         HttpStatus.UNAUTHORIZED,
       );
-    const payload: JwtPayload = {
+
+    const tokens = await this.jwtTokenService.generateTokenPair({
       uid: String(user.id),
-      jti: randomUUID(),
-    };
-
-    const accessToken = await this.jwtService.signAsync(payload, {
-      secret:
-        this.config.get<string>('ACCESS_TOKEN_KEY') ?? 'default_access_secret',
-      expiresIn: (this.config.get<string>('ACCESS_TOKEN_EXPIRES_IN') ??
-        '1h') as any,
-    });
-
-    const refreshToken = await this.jwtService.signAsync(payload, {
-      secret:
-        this.config.get<string>('REFRESH_TOKEN_KEY') ??
-        'default_refresh_secret',
-      expiresIn: (this.config.get<string>('REFRESH_TOKEN_EXPIRES_IN') ??
-        '7d') as any,
     });
 
     return {
-      accessToken,
-      refreshToken,
+      ...tokens,
     };
   }
 }

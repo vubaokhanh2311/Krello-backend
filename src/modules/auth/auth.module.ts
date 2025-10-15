@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { JwtService } from '@nestjs/jwt';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule } from '@nestjs/config';
+import { JwtTokenService } from './jwt-token.service';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -12,6 +13,6 @@ import { ConfigModule } from '@nestjs/config';
     JwtModule.register({}),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtService],
+  providers: [AuthService, JwtService, JwtTokenService],
 })
 export class AuthModule {}
