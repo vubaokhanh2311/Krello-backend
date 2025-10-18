@@ -17,7 +17,6 @@ export class JwtTokenService {
 
   async generateTokenPair(payload: { uid: string }) {
     const jti = randomUUID();
-
     const jwtPayload: JwtPayload = { uid: payload.uid, jti };
 
     const accessToken = await this.jwtService.signAsync(jwtPayload, {
@@ -66,5 +65,14 @@ export class JwtTokenService {
   async isRefreshTokenValid(jti: string): Promise<boolean> {
     const token = await this.redisService.get(genRefreshTokenKey(jti));
     return !!token;
+  }
+
+  async revokeToken(jti: string, expiresInSeconds = 3600) {
+    await this.redisService.set(`bl_${jti}`, 'revoked', 'EX', expiresInSeconds);
+  }
+
+  async isAccessTokenRevoked(jti: string): Promise<boolean> {
+    const exists = await this.redisService.get(`bl_${jti}`);
+    return !!exists;
   }
 }

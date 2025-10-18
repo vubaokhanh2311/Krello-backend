@@ -7,6 +7,7 @@ import { User } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { JwtTokenService } from './jwt-token.service';
 import { ConfigService } from '@nestjs/config';
+import { JwtPayload } from './interfaces/jwt-payload.interface';
 
 import { ERROR_MESSAGES } from '../../constants/error-messages.constant';
 @Injectable()
@@ -71,5 +72,10 @@ export class AuthService {
     return {
       ...tokens,
     };
+  }
+
+  async logout(payload: JwtPayload) {
+    await this.jwtTokenService.revokeToken(payload.jti);
+    return { message: 'Logged out successfully' };
   }
 }
