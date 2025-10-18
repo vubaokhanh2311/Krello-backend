@@ -1,13 +1,22 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from '../shared/prisma/prisma.service';
-import { RegisterDto } from './dtos/auth.dto';
+import { RegisterDto, LoginDto } from './dtos/auth.dto';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
 import { User } from '@prisma/client';
+import { JwtService } from '@nestjs/jwt';
+import { JwtTokenService } from './jwt-token.service';
+import { ConfigService } from '@nestjs/config';
 
+import { ERROR_MESSAGES } from '../../constants/error-messages.constant';
 @Injectable()
 export class AuthService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
+    private readonly config: ConfigService,
+    private readonly jwtTokenService: JwtTokenService,
+  ) {}
 
   async register(
     userData: RegisterDto,
@@ -17,7 +26,10 @@ export class AuthService {
     });
 
     if (existing) {
-      throw new HttpException('Email đã được sử dụng', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        ERROR_MESSAGES.AUTH.EMAIL_EXISTS,
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     const salt = randomBytes(5).toString('hex');
@@ -33,5 +45,31 @@ export class AuthService {
 
     const { password, salt: _, ...safeUser } = newUser;
     return safeUser;
+  }
+
+  async login(dto: LoginDto) {
+    const { email, password } = dto;
+
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user)
+      throw new HttpException(
+        ERROR_MESSAGES.AUTH.EMAIL_NOT_FOUND,
+        HttpStatus.BAD_REQUEST,
+      );
+
+    const isMatch = await bcrypt.compare(password + user.salt, user.password);
+    if (!isMatch)
+      throw new HttpException(
+        ERROR_MESSAGES.AUTH.INVALID_PASSWORD,
+        HttpStatus.UNAUTHORIZED,
+      );
+
+    const tokens = await this.jwtTokenService.generateTokenPair({
+      uid: String(user.id),
+    });
+
+    return {
+      ...tokens,
+    };
   }
 }
