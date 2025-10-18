@@ -4,6 +4,8 @@ import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 import { RedisService } from '../shared/redis/redis.service';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { REFRESH_TOKEN_TTL } from '../../constants/cache.constant';
+import { genRefreshTokenKey } from '../../helpers/gen-redis-key.helper';
 
 @Injectable()
 export class JwtTokenService {
@@ -16,10 +18,7 @@ export class JwtTokenService {
   async generateTokenPair(payload: { uid: string }) {
     const jti = randomUUID();
 
-    const jwtPayload: JwtPayload = {
-      uid: payload.uid,
-      jti,
-    };
+    const jwtPayload: JwtPayload = { uid: payload.uid, jti };
 
     const accessToken = await this.jwtService.signAsync(jwtPayload, {
       secret:
@@ -37,10 +36,10 @@ export class JwtTokenService {
     });
 
     await this.redisService.set(
-      `refresh_token:${jti}`,
+      genRefreshTokenKey(jti),
       refreshToken,
       'EX',
-      7 * 24 * 60 * 60,
+      REFRESH_TOKEN_TTL,
     );
 
     return { accessToken, refreshToken, jti };
@@ -61,11 +60,11 @@ export class JwtTokenService {
   }
 
   async revokeRefreshToken(jti: string) {
-    await this.redisService.del(`refresh_token:${jti}`);
+    await this.redisService.del(genRefreshTokenKey(jti));
   }
 
   async isRefreshTokenValid(jti: string): Promise<boolean> {
-    const token = await this.redisService.get(`refresh_token:${jti}`);
+    const token = await this.redisService.get(genRefreshTokenKey(jti));
     return !!token;
   }
 }
