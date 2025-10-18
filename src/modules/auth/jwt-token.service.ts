@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
-import { RedisService } from '../shared/redis/redis.service';
+import { RedisService } from '../../shared/redis/redis.service';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { REFRESH_TOKEN_TTL } from '../../constants/cache.constant';
 import { genRefreshTokenKey } from '../../helpers/gen-redis-key.helper';
