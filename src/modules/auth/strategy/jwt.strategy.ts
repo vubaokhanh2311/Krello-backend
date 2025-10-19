@@ -6,12 +6,15 @@ import { PrismaService } from '../../../shared/prisma/prisma.service';
 import { RedisService } from '../../../shared/redis/redis.service';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
 import { ERROR_MESSAGES } from '../../../constants/error-messages.constant';
+import { JwtTokenService } from '../jwt-token.service';
+
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
     private readonly config: ConfigService,
+    private readonly jwtTokenService: JwtTokenService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -22,7 +25,9 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   async validate(payload: JwtPayload) {
-    const isRevoked = await this.redis.get(`bl_${payload.jti}`);
+    const isRevoked = await this.jwtTokenService.isAccessTokenRevoked(
+      payload.jti,
+    );
     if (isRevoked) {
       throw new UnauthorizedException(ERROR_MESSAGES.AUTH.INVALID_TOKEN);
     }

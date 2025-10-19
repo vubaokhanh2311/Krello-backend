@@ -67,12 +67,18 @@ export class JwtTokenService {
     return !!token;
   }
 
+  private genRevokeKey(jti: string): string {
+    return `bl_${jti}`;
+  }
+
   async revokeToken(jti: string, expiresInSeconds = 3600) {
-    await this.redisService.set(`bl_${jti}`, 'revoked', 'EX', expiresInSeconds);
+    const key = this.genRevokeKey(jti);
+    await this.redisService.set(key, 'revoked', 'EX', expiresInSeconds);
   }
 
   async isAccessTokenRevoked(jti: string): Promise<boolean> {
-    const exists = await this.redisService.get(`bl_${jti}`);
+    const key = this.genRevokeKey(jti);
+    const exists = await this.redisService.get(key);
     return !!exists;
   }
 }

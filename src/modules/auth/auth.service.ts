@@ -10,6 +10,8 @@ import { ConfigService } from '@nestjs/config';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 
 import { ERROR_MESSAGES } from '../../constants/error-messages.constant';
+import { SUCCESS_MESSAGES } from '../../constants/success-messages.constant';
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -39,7 +41,7 @@ export class AuthService {
     const newUser = await this.prisma.user.create({
       data: {
         ...userData,
-        password: hashedPassword,
+        password: hashedPassword as string,
         salt,
       },
     });
@@ -76,6 +78,6 @@ export class AuthService {
 
   async logout(payload: JwtPayload) {
     await this.jwtTokenService.revokeToken(payload.jti);
-    return { message: 'Logged out successfully' };
+    return { message: SUCCESS_MESSAGES.AUTH.LOGOUT };
   }
 }
