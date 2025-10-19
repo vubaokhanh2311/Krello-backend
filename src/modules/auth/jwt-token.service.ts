@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
@@ -9,7 +9,7 @@ import {
   genRefreshTokenKey,
   genRevokeKey,
 } from '../../helpers/gen-redis-key.helper';
-
+import { ERROR_MESSAGES } from '../../constants/error-messages.constant';
 @Injectable()
 export class JwtTokenService {
   constructor(
@@ -79,5 +79,24 @@ export class JwtTokenService {
     const key = genRevokeKey(jti);
     const exists = await this.redisService.get(key);
     return !!exists;
+  }
+
+  async refreshToken(oldRefreshToken: string) {
+    let payload: JwtPayload;
+    try {
+      payload = await this.verifyToken(oldRefreshToken, 'refresh');
+    } catch {
+      throw new UnauthorizedException(ERROR_MESSAGES.AUTH.INVALID_TOKEN);
+    }
+
+    const isValid = await this.isRefreshTokenValid(payload.jti);
+    if (!isValid) {
+      throw new UnauthorizedException(ERROR_MESSAGES.AUTH.INVALID_TOKEN);
+    }
+
+    await this.revokeRefreshToken(payload.jti);
+
+    const newPair = await this.generateTokenPair({ uid: payload.uid });
+    return newPair;
   }
 }
