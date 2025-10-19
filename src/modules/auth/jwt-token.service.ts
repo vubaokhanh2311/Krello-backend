@@ -18,9 +18,18 @@ export class JwtTokenService {
     private readonly redisService: RedisService,
   ) {}
 
-  async generateTokenPair(payload: { uid: string }) {
+  async generateTokenPair(payload: {
+    uid: string;
+    role?: string | null;
+    permissions?: string[];
+  }) {
     const jti = randomUUID();
-    const jwtPayload: JwtPayload = { uid: payload.uid, jti };
+    const jwtPayload: JwtPayload = {
+      uid: payload.uid,
+      jti,
+      role: payload.role,
+      permissions: payload.permissions ?? [],
+    };
 
     const accessToken = await this.jwtService.signAsync(jwtPayload, {
       secret:

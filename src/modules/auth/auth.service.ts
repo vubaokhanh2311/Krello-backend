@@ -53,26 +53,50 @@ export class AuthService {
   async login(dto: LoginDto) {
     const { email, password } = dto;
 
-    const user = await this.prisma.user.findUnique({ where: { email } });
-    if (!user)
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      include: {
+        role: {
+          include: {
+            permissions: {
+              include: {
+                permission: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!user) {
       throw new HttpException(
         ERROR_MESSAGES.AUTH.EMAIL_NOT_FOUND,
         HttpStatus.BAD_REQUEST,
       );
+    }
 
     const isMatch = await bcrypt.compare(password + user.salt, user.password);
-    if (!isMatch)
+    if (!isMatch) {
       throw new HttpException(
         ERROR_MESSAGES.AUTH.INVALID_PASSWORD,
         HttpStatus.UNAUTHORIZED,
       );
+    }
+
+    const roleName = user.role?.name ?? null;
+    const permissionCodes =
+      user.role?.permissions.map((rp) => rp.permission.code) ?? [];
 
     const tokens = await this.jwtTokenService.generateTokenPair({
-      uid: String(user.id),
+      uid: user.id,
+      role: roleName,
+      permissions: permissionCodes,
     });
 
     return {
       ...tokens,
+      role: roleName,
+      permissions: permissionCodes,
     };
   }
 

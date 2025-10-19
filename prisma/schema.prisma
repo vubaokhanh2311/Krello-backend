@@ -33,6 +33,32 @@ model User {
   attachments   Attachment[]
   messages      BoardMessage[]
   notifications Notification[]
+  roleId        String?
+  role          Role?          @relation(fields: [roleId], references: [id])
+}
+
+model Role {
+  id          String           @id @default(uuid())
+  name        String           @unique
+  permissions RolePermission[]
+  users       User[]
+}
+
+model Permission {
+  id    String           @id @default(uuid())
+  code  String           @unique
+  name  String
+  roles RolePermission[]
+}
+
+model RolePermission {
+  id           String     @id @default(uuid())
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id])
+
+  @@unique([roleId, permissionId]) // <--- thêm dòng nà
 }
 
 model Board {
