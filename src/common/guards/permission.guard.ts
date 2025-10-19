@@ -8,14 +8,18 @@ import { Reflector } from '@nestjs/core';
 import { PERMISSIONS_KEY } from '../decorators/permissions.decorator';
 import { JwtPayload } from '../../modules/auth/interfaces/jwt-payload.interface';
 import { ERROR_MESSAGES } from '../../constants/error-messages.constant';
+import { AuthService } from '../../modules/auth/auth.service';
 /**
  * Kiểm tra xem user có đủ quyền để truy cập route hay không
  */
 @Injectable()
 export class PermissionGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
+  constructor(
+    private readonly reflector: Reflector,
+    private readonly authService: AuthService,
+  ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const requiredPermissions = this.reflector.getAllAndOverride<string[]>(
       PERMISSIONS_KEY,
       [context.getHandler(), context.getClass()],
@@ -28,12 +32,16 @@ export class PermissionGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const user = request.user as JwtPayload;
 
-    if (!user?.permissions) {
+    if (!user?.role) {
       throw new ForbiddenException(ERROR_MESSAGES.AUTH.ACCESS_DENIED);
     }
 
+    const rolePermissions = await this.authService.getPermissionsByRole(
+      user.role,
+    );
+
     const hasAllPermissions = requiredPermissions.every((perm) =>
-      user.permissions?.includes(perm),
+      rolePermissions.includes(perm),
     );
 
     if (!hasAllPermissions) {

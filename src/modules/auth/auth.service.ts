@@ -90,7 +90,6 @@ export class AuthService {
     const tokens = await this.jwtTokenService.generateTokenPair({
       uid: user.id,
       role: roleName,
-      permissions: permissionCodes,
     });
 
     return {
@@ -103,5 +102,22 @@ export class AuthService {
   async logout(payload: JwtPayload) {
     await this.jwtTokenService.revokeToken(payload.jti);
     return { message: SUCCESS_MESSAGES.AUTH.LOGOUT };
+  }
+
+  async getPermissionsByRole(roleName: string): Promise<string[]> {
+    const role = await this.prisma.role.findUnique({
+      where: { name: roleName },
+      include: {
+        permissions: {
+          include: {
+            permission: true,
+          },
+        },
+      },
+    });
+
+    if (!role) return [];
+
+    return role.permissions.map((rp) => rp.permission.code);
   }
 }

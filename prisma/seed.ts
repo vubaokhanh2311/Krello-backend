@@ -3,7 +3,6 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  // ----- PERMISSIONS -----
   const permissionsData = [
     { code: 'user.view', name: 'Xem người dùng' },
     { code: 'user.create', name: 'Tạo người dùng' },
@@ -16,9 +15,8 @@ async function main() {
     skipDuplicates: true,
   });
 
-  console.log(`✅ Đã seed ${permissionsData.length} quyền`);
+  console.log(`seed ${permissionsData.length} permission`);
 
-  // ----- ROLES -----
   const adminRole = await prisma.role.upsert({
     where: { name: 'Admin' },
     update: {},
@@ -31,12 +29,10 @@ async function main() {
     create: { name: 'User' },
   });
 
-  console.log(`✅ Đã tạo vai trò Admin & User`);
+  console.log(` Admin & User roles created`);
 
-  // ----- GÁN QUYỀN -----
   const allPermissions = await prisma.permission.findMany();
 
-  // Gán tất cả quyền cho Admin
   for (const perm of allPermissions) {
     await prisma.rolePermission.upsert({
       where: {
@@ -53,7 +49,6 @@ async function main() {
     });
   }
 
-  // Gán quyền user.view cho User
   const viewPermission = allPermissions.find((p) => p.code === 'user.view');
   if (viewPermission) {
     await prisma.rolePermission.upsert({
@@ -71,7 +66,7 @@ async function main() {
     });
   }
 
-  console.log(`✅ Đã gán quyền cho các vai trò`);
+  console.log(`Permissions assigned to roles`);
 }
 
 main()
