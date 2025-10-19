@@ -5,7 +5,10 @@ import { randomUUID } from 'crypto';
 import { RedisService } from '../../shared/redis/redis.service';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { REFRESH_TOKEN_TTL } from '../../constants/cache.constant';
-import { genRefreshTokenKey } from '../../helpers/gen-redis-key.helper';
+import {
+  genRefreshTokenKey,
+  genRevokeKey,
+} from '../../helpers/gen-redis-key.helper';
 
 @Injectable()
 export class JwtTokenService {
@@ -17,7 +20,6 @@ export class JwtTokenService {
 
   async generateTokenPair(payload: { uid: string }) {
     const jti = randomUUID();
-
     const jwtPayload: JwtPayload = { uid: payload.uid, jti };
 
     const accessToken = await this.jwtService.signAsync(jwtPayload, {
@@ -66,5 +68,16 @@ export class JwtTokenService {
   async isRefreshTokenValid(jti: string): Promise<boolean> {
     const token = await this.redisService.get(genRefreshTokenKey(jti));
     return !!token;
+  }
+
+  async revokeToken(jti: string, expiresInSeconds = 3600) {
+    const key = genRevokeKey(jti);
+    await this.redisService.set(key, 'revoked', 'EX', expiresInSeconds);
+  }
+
+  async isAccessTokenRevoked(jti: string): Promise<boolean> {
+    const key = genRevokeKey(jti);
+    const exists = await this.redisService.get(key);
+    return !!exists;
   }
 }
