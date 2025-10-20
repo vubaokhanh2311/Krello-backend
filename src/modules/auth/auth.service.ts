@@ -12,6 +12,7 @@ import { RedisService } from '../../shared/redis/redis.service';
 import { ERROR_MESSAGES } from '../../constants/error-messages.constant';
 import { SUCCESS_MESSAGES } from '../../constants/success-messages.constant';
 import { USER_PERMISSIONS } from '../../constants/cache.constant';
+import { genUserPermissionKey } from '../../helpers/gen-key.helper';
 @Injectable()
 export class AuthService {
   constructor(
@@ -105,12 +106,8 @@ export class AuthService {
     return { message: SUCCESS_MESSAGES.AUTH.LOGOUT };
   }
 
-  private generateCacheKeyForUser(userId: string): string {
-    return `permissions:user:${userId}`;
-  }
-
   async getPermissionsByUser(userId: string): Promise<string[]> {
-    const cacheKey = this.generateCacheKeyForUser(userId);
+    const cacheKey = genUserPermissionKey(userId);
 
     const cached = await this.redisService.getCache<string[]>(cacheKey);
     if (cached) return cached;
@@ -136,7 +133,7 @@ export class AuthService {
   }
 
   async clearUserPermissionCache(userId: string) {
-    const cacheKey = this.generateCacheKeyForUser(userId);
+    const cacheKey = genUserPermissionKey(userId);
 
     await this.redisService.delCache(cacheKey);
   }
