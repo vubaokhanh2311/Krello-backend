@@ -105,32 +105,48 @@ export class AuthService {
     return { message: SUCCESS_MESSAGES.AUTH.LOGOUT };
   }
 
-  async getPermissionsByRole(roleName: string): Promise<string[]> {
-    const cacheKey = `permissions:${roleName}`;
+  async getPermissionsByUser(userId: string): Promise<string[]> {
+    const cacheKey = `permissions:user:${userId}`;
 
+    // 1️⃣ Kiểm tra cache trước
     const cached = await this.redisService.getCache<string[]>(cacheKey);
     if (cached) return cached;
 
-    const role = await this.prisma.role.findUnique({
-      where: { name: roleName },
-      include: { permissions: { include: { permission: true } } },
+    // 2️⃣ Lấy quyền từ DB
+    const user = await this.prisma.user.findUnique({
+      where: { id: String(userId) },
+      include: {
+        role: {
+          include: {
+            permissions: { include: { permission: true } },
+          },
+        },
+      },
     });
 
-    if (!role) return [];
+    if (!user?.role) return [];
 
-    const permissions = role.permissions.map((rp) => rp.permission.code);
+    // 3️⃣ Lấy danh sách mã quyền (code)
+    const permissions = user.role.permissions.map((rp) => rp.permission.code);
 
+    // 4️⃣ Lưu cache 1 tiếng (3600s)
     await this.redisService.setCache(cacheKey, permissions, 3600);
 
     return permissions;
   }
 
-  async clearRolePermissionCache(roleName: string) {
-    const cacheKey = `permissions:${roleName}`;
+  /**
+   * Xoá cache quyền theo userId
+   */
+  async clearUserPermissionCache(userId: string) {
+    const cacheKey = `permissions:user:${userId}`;
     await this.redisService.delCache(cacheKey);
   }
 
-  async clearAllPermissionCache() {
-    await this.redisService.delByPattern('permissions:*');
+  /**
+   * Xoá toàn bộ cache quyền của tất cả user (khi cập nhật quyền lớn)
+   */
+  async clearAllUserPermissionCache() {
+    await this.redisService.delByPattern('permissions:user:*');
   }
 }

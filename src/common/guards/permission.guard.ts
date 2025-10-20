@@ -23,27 +23,28 @@ export class PermissionGuard implements CanActivate {
       [context.getHandler(), context.getClass()],
     );
 
-    if (!requiredPermissions || requiredPermissions.length === 0) {
-      return true;
-    }
+    // Nếu route không yêu cầu quyền -> cho qua
+    if (!requiredPermissions || requiredPermissions.length === 0) return true;
 
     const request = context.switchToHttp().getRequest();
     const user = request.user as JwtPayload;
 
-    if (!user?.role) {
-      throw new ForbiddenException(ERROR_MESSAGES.AUTH.ACCESS_DENIED);
+    if (!user?.uid) {
+      throw new ForbiddenException('Access denied: no user info in token.');
     }
 
-    const rolePermissions = await this.authService.getPermissionsByRole(
-      user.role,
+    // 🔥 Lấy quyền của user (đã có cache)
+    const userPermissions = await this.authService.getPermissionsByUser(
+      String(user.uid),
     );
 
+    // 🔎 Kiểm tra user có đủ quyền không
     const hasAllPermissions = requiredPermissions.every((perm) =>
-      rolePermissions.includes(perm),
+      userPermissions.includes(perm),
     );
 
     if (!hasAllPermissions) {
-      throw new ForbiddenException(ERROR_MESSAGES.AUTH.ACCESS_DENIED);
+      throw new ForbiddenException('Access denied: insufficient permissions.');
     }
 
     return true;
