@@ -8,10 +8,11 @@ import { JwtService } from '@nestjs/jwt';
 import { JwtTokenService } from './jwt-token.service';
 import { ConfigService } from '@nestjs/config';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
-
+import { RedisService } from '../../shared/redis/redis.service';
 import { ERROR_MESSAGES } from '../../constants/error-messages.constant';
 import { SUCCESS_MESSAGES } from '../../constants/success-messages.constant';
-
+import { USER_PERMISSIONS } from '../../constants/cache.constant';
+import { genUserPermissionKey } from '../../helpers/gen-key.helper';
 @Injectable()
 export class AuthService {
   constructor(
@@ -19,6 +20,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
     private readonly jwtTokenService: JwtTokenService,
+    private readonly redisService: RedisService,
   ) {}
 
   async register(
@@ -53,31 +55,90 @@ export class AuthService {
   async login(dto: LoginDto) {
     const { email, password } = dto;
 
-    const user = await this.prisma.user.findUnique({ where: { email } });
-    if (!user)
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      include: {
+        role: {
+          include: {
+            permissions: {
+              include: {
+                permission: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!user) {
       throw new HttpException(
         ERROR_MESSAGES.AUTH.EMAIL_NOT_FOUND,
         HttpStatus.BAD_REQUEST,
       );
+    }
 
     const isMatch = await bcrypt.compare(password + user.salt, user.password);
-    if (!isMatch)
+    if (!isMatch) {
       throw new HttpException(
         ERROR_MESSAGES.AUTH.INVALID_PASSWORD,
         HttpStatus.UNAUTHORIZED,
       );
+    }
+
+    const roleName = user.role?.name ?? null;
+    const permissionCodes =
+      user.role?.permissions.map((rp) => rp.permission.code) ?? [];
 
     const tokens = await this.jwtTokenService.generateTokenPair({
-      uid: String(user.id),
+      uid: user.id,
+      role: roleName,
     });
 
     return {
       ...tokens,
+      role: roleName,
+      permissions: permissionCodes,
     };
   }
 
   async logout(payload: JwtPayload) {
     await this.jwtTokenService.revokeToken(payload.jti);
     return { message: SUCCESS_MESSAGES.AUTH.LOGOUT };
+  }
+
+  async getPermissionsByUser(userId: string): Promise<string[]> {
+    const cacheKey = genUserPermissionKey(userId);
+
+    const cached = await this.redisService.getCache<string[]>(cacheKey);
+    if (cached) return cached;
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: String(userId) },
+      include: {
+        role: {
+          include: {
+            permissions: { include: { permission: true } },
+          },
+        },
+      },
+    });
+
+    if (!user?.role) return [];
+
+    const permissions = user.role.permissions.map((rp) => rp.permission.code);
+
+    await this.redisService.setCache(cacheKey, permissions, USER_PERMISSIONS);
+
+    return permissions;
+  }
+
+  async clearUserPermissionCache(userId: string) {
+    const cacheKey = genUserPermissionKey(userId);
+
+    await this.redisService.delCache(cacheKey);
+  }
+
+  async clearAllUserPermissionCache() {
+    await this.redisService.delByPattern('permissions:user:*');
   }
 }
