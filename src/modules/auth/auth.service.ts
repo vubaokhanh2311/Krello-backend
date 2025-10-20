@@ -8,7 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import { JwtTokenService } from './jwt-token.service';
 import { ConfigService } from '@nestjs/config';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
-
+import { RedisService } from '../../shared/redis/redis.service';
 import { ERROR_MESSAGES } from '../../constants/error-messages.constant';
 import { SUCCESS_MESSAGES } from '../../constants/success-messages.constant';
 
@@ -19,6 +19,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
     private readonly jwtTokenService: JwtTokenService,
+    private readonly redisService: RedisService,
   ) {}
 
   async register(
@@ -105,19 +106,31 @@ export class AuthService {
   }
 
   async getPermissionsByRole(roleName: string): Promise<string[]> {
+    const cacheKey = `permissions:${roleName}`;
+
+    const cached = await this.redisService.getCache<string[]>(cacheKey);
+    if (cached) return cached;
+
     const role = await this.prisma.role.findUnique({
       where: { name: roleName },
-      include: {
-        permissions: {
-          include: {
-            permission: true,
-          },
-        },
-      },
+      include: { permissions: { include: { permission: true } } },
     });
 
     if (!role) return [];
 
-    return role.permissions.map((rp) => rp.permission.code);
+    const permissions = role.permissions.map((rp) => rp.permission.code);
+
+    await this.redisService.setCache(cacheKey, permissions, 3600);
+
+    return permissions;
+  }
+
+  async clearRolePermissionCache(roleName: string) {
+    const cacheKey = `permissions:${roleName}`;
+    await this.redisService.delCache(cacheKey);
+  }
+
+  async clearAllPermissionCache() {
+    await this.redisService.delByPattern('permissions:*');
   }
 }

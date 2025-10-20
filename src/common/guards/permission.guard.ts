@@ -9,9 +9,7 @@ import { PERMISSIONS_KEY } from '../decorators/permissions.decorator';
 import { JwtPayload } from '../../modules/auth/interfaces/jwt-payload.interface';
 import { ERROR_MESSAGES } from '../../constants/error-messages.constant';
 import { AuthService } from '../../modules/auth/auth.service';
-/**
- * Kiểm tra xem user có đủ quyền để truy cập route hay không
- */
+
 @Injectable()
 export class PermissionGuard implements CanActivate {
   constructor(
