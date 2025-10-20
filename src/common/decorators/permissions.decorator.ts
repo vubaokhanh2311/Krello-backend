@@ -3,7 +3,7 @@ import { SetMetadata } from '@nestjs/common';
 export const PERMISSIONS_KEY = 'permissions';
 
 /**
- * Gắn quyền cần thiết cho 1 route handler
+ * Assign necessary permissions to a route handler
  * @example
  * @Permissions('user.create', 'user.delete')
  */

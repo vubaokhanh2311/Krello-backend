@@ -11,7 +11,7 @@ import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { RedisService } from '../../shared/redis/redis.service';
 import { ERROR_MESSAGES } from '../../constants/error-messages.constant';
 import { SUCCESS_MESSAGES } from '../../constants/success-messages.constant';
-
+import { USER_PERMISSIONS } from '../../constants/cache.constant';
 @Injectable()
 export class AuthService {
   constructor(
@@ -105,14 +105,16 @@ export class AuthService {
     return { message: SUCCESS_MESSAGES.AUTH.LOGOUT };
   }
 
-  async getPermissionsByUser(userId: string): Promise<string[]> {
-    const cacheKey = `permissions:user:${userId}`;
+  private generateCacheKeyForUser(userId: string): string {
+    return `permissions:user:${userId}`;
+  }
 
-    // 1️⃣ Kiểm tra cache trước
+  async getPermissionsByUser(userId: string): Promise<string[]> {
+    const cacheKey = this.generateCacheKeyForUser(userId);
+
     const cached = await this.redisService.getCache<string[]>(cacheKey);
     if (cached) return cached;
 
-    // 2️⃣ Lấy quyền từ DB
     const user = await this.prisma.user.findUnique({
       where: { id: String(userId) },
       include: {
@@ -126,26 +128,19 @@ export class AuthService {
 
     if (!user?.role) return [];
 
-    // 3️⃣ Lấy danh sách mã quyền (code)
     const permissions = user.role.permissions.map((rp) => rp.permission.code);
 
-    // 4️⃣ Lưu cache 1 tiếng (3600s)
-    await this.redisService.setCache(cacheKey, permissions, 3600);
+    await this.redisService.setCache(cacheKey, permissions, USER_PERMISSIONS);
 
     return permissions;
   }
 
-  /**
-   * Xoá cache quyền theo userId
-   */
   async clearUserPermissionCache(userId: string) {
-    const cacheKey = `permissions:user:${userId}`;
+    const cacheKey = this.generateCacheKeyForUser(userId);
+
     await this.redisService.delCache(cacheKey);
   }
 
-  /**
-   * Xoá toàn bộ cache quyền của tất cả user (khi cập nhật quyền lớn)
-   */
   async clearAllUserPermissionCache() {
     await this.redisService.delByPattern('permissions:user:*');
   }
