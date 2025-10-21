@@ -1,4 +1,12 @@
-import { Controller, Get, UseGuards, Req, Body, Put } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  UseGuards,
+  Req,
+  Body,
+  Put,
+  Patch,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionGuard } from '../../common/guards/permission.guard';
 import { Permissions } from '../../common/decorators/permissions.decorator';
@@ -23,5 +31,10 @@ export class UserController {
   @Put('profile')
   async updateProfile(@Req() req, @Body() dto: UpdateProfileDto) {
     return this.userService.updateProfile(req.user.uid, dto);
+  }
+
+  @Patch('avatar')
+  async updateAvatar(@Req() req, @Body('avatarUrl') avatarUrl: string) {
+    return this.userService.updateAvatar(req.user.uid, avatarUrl);
   }
 }
