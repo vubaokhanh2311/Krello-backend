@@ -1,4 +1,10 @@
-import { IsEmail, IsOptional } from 'class-validator';
+import {
+  IsEmail,
+  IsOptional,
+  IsNotEmpty,
+  IsString,
+  IsUrl,
+} from 'class-validator';
 
 export class UpdateProfileDto {
   @IsOptional()
@@ -7,4 +13,11 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsEmail()
   email?: string;
+}
+
+export class UpdateAvatarDto {
+  @IsNotEmpty()
+  @IsString()
+  @IsUrl()
+  avatarUrl: string;
 }

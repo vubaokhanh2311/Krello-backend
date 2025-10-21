@@ -12,7 +12,7 @@ import { PermissionGuard } from '../../common/guards/permission.guard';
 import { Permissions } from '../../common/decorators/permissions.decorator';
 import { PermissionEnum } from '../../constants/permissions.enum';
 import { UserService } from './user.service';
-import { UpdateProfileDto } from './dtos/user.dto';
+import { UpdateProfileDto, UpdateAvatarDto } from './dtos/user.dto';
 @Controller('user')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class UserController {
@@ -34,7 +34,7 @@ export class UserController {
   }
 
   @Patch('avatar')
-  async updateAvatar(@Req() req, @Body('avatarUrl') avatarUrl: string) {
-    return this.userService.updateAvatar(req.user.uid, avatarUrl);
+  async updateAvatar(@Req() req, @Body() dto: UpdateAvatarDto) {
+    return this.userService.updateAvatar(req.user.uid, dto.avatarUrl);
   }
 }

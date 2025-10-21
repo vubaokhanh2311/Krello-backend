@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { ERROR_MESSAGES } from '../../constants/error-messages.constant';
+import { UpdateAvatarDto } from './dtos/user.dto';
 @Injectable()
 export class UserService {
   constructor(private prisma: PrismaService) {}
@@ -31,10 +32,10 @@ export class UserService {
     });
   }
 
-  async updateAvatar(userId: string, avatarUrl: string) {
+  async updateAvatar(userId: string, dto: UpdateAvatarDto) {
     return this.prisma.user.update({
       where: { id: userId },
-      data: { avatarUrl },
+      data: { avatarUrl: dto.avatarUrl },
       select: { id: true, avatarUrl: true },
     });
   }
