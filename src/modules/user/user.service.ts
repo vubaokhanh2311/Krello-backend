@@ -22,4 +22,12 @@ export class UserService {
 
     return user;
   }
+
+  async updateProfile(userId: string, dto: { name?: string; email?: string }) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { name: dto.name, email: dto.email },
+      select: { id: true, name: true, email: true, avatarUrl: true },
+    });
+  }
 }
