@@ -1,9 +1,10 @@
-import { Controller, Get, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, UseGuards, Req, Body, Put } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionGuard } from '../../common/guards/permission.guard';
 import { Permissions } from '../../common/decorators/permissions.decorator';
 import { PermissionEnum } from '../../constants/permissions.enum';
 import { UserService } from './user.service';
+import { UpdateProfileDto } from './dtos/user.dto';
 @Controller('user')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class UserController {
@@ -17,5 +18,10 @@ export class UserController {
   @Get('profile')
   async getProfile(@Req() req) {
     return this.userService.getProfile(req.user.uid);
+  }
+
+  @Put('profile')
+  async updateProfile(@Req() req, @Body() dto: UpdateProfileDto) {
+    return this.userService.updateProfile(req.user.uid, dto);
   }
 }
