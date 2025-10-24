@@ -21,3 +21,16 @@ export class UpdateAvatarDto {
   @IsUrl()
   avatarUrl: string;
 }
+
+export class UpdateUserDto {
+  name?: string;
+  email?: string;
+  roleId?: string;
+}
+
+export class CreateUserDto {
+  name: string;
+  email: string;
+  password: string;
+  roleId?: string;
+}

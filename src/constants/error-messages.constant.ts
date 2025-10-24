@@ -9,6 +9,8 @@ export const ERROR_MESSAGES = {
   },
   USER: {
     NOT_FOUND: 'User not found',
+    NOT_FOUND_UPDATE: 'User not found or cannot update',
+    NOT_FOUND_DELETE: 'User not found or cannot delete',
   },
   UPLOAD_FILE: {
     ERROR: 'Only image files are allowed!',

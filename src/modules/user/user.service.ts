@@ -2,7 +2,13 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { ERROR_MESSAGES } from '../../constants/error-messages.constant';
 import { UpdateAvatarDto } from './dtos/user.dto';
-import { UpdateProfileDto } from './dtos/user.dto';
+import * as bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
+import {
+  UpdateProfileDto,
+  UpdateUserDto,
+  CreateUserDto,
+} from './dtos/user.dto';
 @Injectable()
 export class UserService {
   constructor(private prisma: PrismaService) {}
@@ -39,5 +45,86 @@ export class UserService {
       data: { avatarUrl: dto.avatarUrl },
       select: { id: true, avatarUrl: true },
     });
+  }
+
+  async findAll() {
+    return this.prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        avatarUrl: true,
+        roleId: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+  async findOne(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        avatarUrl: true,
+        roleId: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+    if (!user) throw new NotFoundException(ERROR_MESSAGES.USER.NOT_FOUND);
+    return user;
+  }
+
+  async create(dto: CreateUserDto) {
+    const salt = randomBytes(5).toString('hex');
+    const hashedPassword = await bcrypt.hash(userData.password + salt, 10);
+
+    return this.prisma.user.create({
+      data: {
+        ...dto,
+        password: hashedPassword as string,
+        salt,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        avatarUrl: true,
+        roleId: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
+  async update(id: string, dto: UpdateUserDto) {
+    try {
+      return await this.prisma.user.update({
+        where: { id },
+        data: dto,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          avatarUrl: true,
+          roleId: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+    } catch (error) {
+      throw new NotFoundException(ERROR_MESSAGES.USER.NOT_FOUND_UPDATE);
+    }
+  }
+
+  async remove(id: string) {
+    try {
+      await this.prisma.user.delete({ where: { id } });
+      return { deleted: true };
+    } catch (error) {
+      throw new NotFoundException(ERROR_MESSAGES.USER.NOT_FOUND_DELETE);
+    }
   }
 }
