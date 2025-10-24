@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { ERROR_MESSAGES } from '../../constants/error-messages.constant';
 import { UpdateAvatarDto } from './dtos/user.dto';
@@ -78,6 +82,13 @@ export class UserService {
   }
 
   async create(dto: CreateUserDto) {
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (existingUser) {
+      throw new ForbiddenException(ERROR_MESSAGES.USER.EMAIL_ALREADY_EXISTS);
+    }
     const salt = randomBytes(5).toString('hex');
     const hashedPassword = await bcrypt.hash(userData.password + salt, 10);
 
@@ -101,7 +112,19 @@ export class UserService {
 
   async update(id: string, dto: UpdateUserDto) {
     try {
-      return await this.prisma.user.update({
+      if (dto.email) {
+        const existingUser = await this.prisma.user.findUnique({
+          where: { email: dto.email },
+        });
+
+        if (existingUser && existingUser.id !== id) {
+          throw new ForbiddenException(
+            ERROR_MESSAGES.USER.EMAIL_ALREADY_EXISTS,
+          );
+        }
+      }
+
+      const updatedUser = await this.prisma.user.update({
         where: { id },
         data: dto,
         select: {
@@ -114,8 +137,13 @@ export class UserService {
           updatedAt: true,
         },
       });
+
+      return updatedUser;
     } catch (error) {
-      throw new NotFoundException(ERROR_MESSAGES.USER.NOT_FOUND_UPDATE);
+      if (error.code === 'P2025') {
+        throw new NotFoundException(ERROR_MESSAGES.USER.NOT_FOUND_UPDATE);
+      }
+      throw error;
     }
   }
 
