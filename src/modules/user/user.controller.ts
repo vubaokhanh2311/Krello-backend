@@ -21,6 +21,7 @@ import sharp from 'sharp';
 import { join } from 'path';
 import * as fs from 'fs';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import * as path from 'path';
 @Controller('user')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class UserController {
@@ -58,7 +59,7 @@ export class UserController {
     fs.unlinkSync(uploadPath);
     fs.renameSync(tempPath, uploadPath);
 
-    const avatarUrl = `${req.protocol}://${req.get('host')}/uploads/avatars/${file.filename}`;
+    const avatarUrl = `/uploads/avatars/${file.filename}`;
 
     await this.userService.updateAvatar(userId, { avatarUrl });
 
