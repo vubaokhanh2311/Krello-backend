@@ -10,6 +10,9 @@ export const ERROR_MESSAGES = {
   USER: {
     NOT_FOUND: 'User not found',
   },
+  UPLOAD_FILE: {
+    ERROR: 'Only image files are allowed!',
+  },
   COMMON: {
     UNKNOWN_ERROR: 'An unexpected error occurred, please try again later',
   },
