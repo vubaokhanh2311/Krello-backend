@@ -51,19 +51,41 @@ export class UserService {
     });
   }
 
-  async findAll() {
-    return this.prisma.user.findMany({
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        avatarUrl: true,
-        roleId: true,
-        createdAt: true,
-        updatedAt: true,
+  async findAll(query: { page?: number; pageSize?: number }) {
+    const page = Number(query.page) || 1;
+    const pageSize = Number(query.pageSize) || 10;
+
+    const skip = (page - 1) * pageSize;
+    const take = pageSize;
+
+    const [data, total] = await Promise.all([
+      this.prisma.user.findMany({
+        skip,
+        take,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          avatarUrl: true,
+          roleId: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      }),
+      this.prisma.user.count(),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
       },
-    });
+    };
   }
+
   async findOne(id: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },

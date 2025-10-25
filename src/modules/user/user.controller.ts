@@ -11,6 +11,7 @@ import {
   Param,
   Delete,
   Post,
+  Query,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionGuard } from '../../common/guards/permission.guard';
@@ -21,6 +22,7 @@ import {
   UpdateProfileDto,
   UpdateUserDto,
   CreateUserDto,
+  PaginationDto,
 } from './dtos/user.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { multerConfig } from '../../config/multer.config';
@@ -34,10 +36,9 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
   @Get()
   @Permissions(PermissionEnum.USER_VIEW)
-  findAll() {
-    return this.userService.findAll();
+  async findAll(@Query() query: PaginationDto) {
+    return this.userService.findAll(query);
   }
-
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.userService.findOne(id);
