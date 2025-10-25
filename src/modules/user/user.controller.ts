@@ -22,8 +22,9 @@ import {
   UpdateProfileDto,
   UpdateUserDto,
   CreateUserDto,
-  PaginationDto,
+  UserQueryDto,
 } from './dtos/user.dto';
+
 import { FileInterceptor } from '@nestjs/platform-express';
 import { multerConfig } from '../../config/multer.config';
 import sharp from 'sharp';
@@ -36,7 +37,7 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
   @Get()
   @Permissions(PermissionEnum.USER_VIEW)
-  async findAll(@Query() query: PaginationDto) {
+  async findAll(@Query() query: UserQueryDto) {
     return this.userService.findAll(query);
   }
   @Get(':id')

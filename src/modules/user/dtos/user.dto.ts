@@ -4,10 +4,8 @@ import {
   IsNotEmpty,
   IsString,
   IsUrl,
-  IsInt,
-  Min,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { PaginationDto } from '../../../common/dtos/pagination.dto';
 export class UpdateProfileDto {
   @IsOptional()
   name?: string;
@@ -37,16 +35,12 @@ export class CreateUserDto {
   roleId?: string;
 }
 
-export class PaginationDto {
+export class UserQueryDto extends PaginationDto {
   @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+  @IsString()
+  name?: string;
 
   @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  pageSize?: number = 10;
+  @IsString()
+  email?: string;
 }
