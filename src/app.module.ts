@@ -7,12 +7,14 @@ import { ConfigModule } from '@nestjs/config';
 import { UserService } from './modules/user/user.service';
 import { UserController } from './modules/user/user.controller';
 import { UserModule } from './modules/user/user.module';
+import { BoardModule } from './modules/board/board.module';
 @Module({
   imports: [
     SharedModule,
     AuthModule,
     ConfigModule.forRoot({ isGlobal: true }),
     UserModule,
+    BoardModule,
   ],
   controllers: [AppController, UserController],
   providers: [AppService, UserService],

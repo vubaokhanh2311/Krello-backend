@@ -19,4 +19,7 @@ export const ERROR_MESSAGES = {
   COMMON: {
     UNKNOWN_ERROR: 'An unexpected error occurred, please try again later',
   },
+  BOARD: {
+    NOT_FOUND: 'Board not found',
+  },
 } as const;
