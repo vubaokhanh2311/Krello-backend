@@ -24,17 +24,18 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  boardsOwned   Board[]        @relation("BoardOwner")
-  boardMembers  BoardMember[]
-  cardsCreated  Card[]         @relation("CardCreator")
-  cardsAssigned Card[]         @relation("CardAssignee")
-  comments      Comment[]
-  activities    Activity[]
-  attachments   Attachment[]
-  messages      BoardMessage[]
-  notifications Notification[]
-  roleId        String?
-  role          Role?          @relation(fields: [roleId], references: [id])
+  boardsOwned     Board[]           @relation("BoardOwner")
+  boardMembers    BoardMember[]
+  cardsCreated    Card[]            @relation("CardCreator")
+  cardsAssigned   Card[]            @relation("CardAssignee")
+  comments        Comment[]
+  activities      Activity[]
+  attachments     Attachment[]
+  messages        BoardMessage[]
+  notifications   Notification[]
+  roleId          String?
+  role            Role?             @relation(fields: [roleId], references: [id])
+  BoardInvitation BoardInvitation[]
 }
 
 model Role {
@@ -64,7 +65,7 @@ model RolePermission {
   role         Role       @relation(fields: [roleId], references: [id])
   permission   Permission @relation(fields: [permissionId], references: [id])
 
-  @@unique([roleId, permissionId]) 
+  @@unique([roleId, permissionId])
 }
 
 model Board {
@@ -78,16 +79,17 @@ model Board {
   ownerId String
   owner   User   @relation("BoardOwner", fields: [ownerId], references: [id])
 
-  members    BoardMember[]
-  lists      List[]
-  labels     Label[]
-  activities Activity[]
-  messages   BoardMessage[]
+  members         BoardMember[]
+  lists           List[]
+  labels          Label[]
+  activities      Activity[]
+  messages        BoardMessage[]
+  BoardInvitation BoardInvitation[]
 }
 
 model BoardMember {
   id       String   @id @default(uuid())
-  role     RoleType @default(editor)
+  role     RoleType @default(viewer)
   joinedAt DateTime @default(now())
 
   boardId String
@@ -101,6 +103,27 @@ enum RoleType {
   owner
   editor
   viewer
+}
+
+model BoardInvitation {
+  id          String       @id @default(uuid())
+  boardId     String
+  board       Board        @relation(fields: [boardId], references: [id])
+  email       String
+  token       String       @unique
+  role        RoleType     @default(viewer)
+  status      InviteStatus @default(PENDING)
+  createdAt   DateTime     @default(now())
+  expiresAt   DateTime
+  invitedById String
+  invitedBy   User         @relation(fields: [invitedById], references: [id])
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REJECTED
 }
 
 model List {

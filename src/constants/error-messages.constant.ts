@@ -25,4 +25,11 @@ export const ERROR_MESSAGES = {
     OWNER_NOT_BOARD: 'You are not the owner of this board',
     NOT_MEMBER: 'Member not found in board',
   },
+  INVITATION: {
+    NOT_FOUND: 'Invitation not found',
+    ALREADY_HANDLED: 'Invitation already handled',
+    EXPIRED: 'Invitation expired',
+    EMAIL_MISMATCH: 'This invitation is not for your email',
+    ALREADY_PENDING: 'This email has already been invited',
+  },
 } as const;

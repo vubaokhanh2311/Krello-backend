@@ -16,5 +16,6 @@ export const SUCCESS_MESSAGES = {
     NOT_FOUND: 'Board not found',
     SUCCESS_MEMBER: 'Member invited successfully',
     MEMBER_REMOVED: 'Member removed successfully',
+    EMAIL_SENT: 'Invitation email sent successfully',
   },
 } as const;

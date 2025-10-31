@@ -5,8 +5,11 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
+import { EmailService } from '../../shared/mail/email.services';
+import { randomBytes } from 'crypto';
 import { ERROR_MESSAGES } from '../../constants/error-messages.constant';
 import { SUCCESS_MESSAGES } from '../../constants/success-messages.constant';
+import { inviteEmailTemplate } from '../../assets/templates/invite-email.template';
 
 import {
   CreateBoardDto,
@@ -16,7 +19,10 @@ import {
 } from './dtos/board.dto';
 @Injectable()
 export class BoardService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private email: EmailService,
+  ) {}
 
   async findAll(userId: string, query: BoardQueryDto) {
     const page = Number(query.page) || 1;
@@ -154,7 +160,7 @@ export class BoardService {
   }
 
   async inviteMember(boardId: string, ownerId: string, dto: InviteMemberDto) {
-    const { userId, role } = dto;
+    const { email, role } = dto;
 
     const board = await this.prisma.board.findUnique({
       where: { id: boardId },
@@ -163,18 +169,64 @@ export class BoardService {
     if (board.ownerId !== ownerId)
       throw new ForbiddenException(ERROR_MESSAGES.AUTH.ACCESS_DENIED);
 
-    const exists = await this.prisma.boardMember.findFirst({
-      where: { boardId, userId },
-    });
-    if (exists)
-      throw new BadRequestException(ERROR_MESSAGES.BOARD.USER_ALREADY_A_MEMBER);
-
-    const member = await this.prisma.boardMember.create({
-      data: { boardId, userId, role },
-      include: { user: { select: { id: true, name: true, email: true } } },
+    let invitation = await this.prisma.boardInvitation.findFirst({
+      where: { boardId, email, status: 'PENDING' },
     });
 
-    return { message: SUCCESS_MESSAGES.BOARD.SUCCESS_MEMBER, member };
+    const token = randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7);
+
+    if (invitation) {
+      invitation = await this.prisma.boardInvitation.update({
+        where: { id: invitation.id },
+        data: { token, expiresAt, invitedById: ownerId, role },
+      });
+    } else {
+      invitation = await this.prisma.boardInvitation.create({
+        data: { boardId, email, token, expiresAt, invitedById: ownerId, role },
+      });
+    }
+
+    const acceptLink = `${process.env.FRONTEND_URL}/boards/invite/accept?token=${token}`;
+    await this.email.sendMail(
+      email,
+      `Invitation to join board "${board.name}"`,
+      `You have been invited to join the board "${board.name}".`,
+      inviteEmailTemplate(board.name, acceptLink),
+    );
+
+    return { message: SUCCESS_MESSAGES.BOARD.EMAIL_SENT };
+  }
+
+  async confirmInvite(token: string, userId: string) {
+    const invite = await this.prisma.boardInvitation.findUnique({
+      where: { token },
+    });
+    if (!invite)
+      throw new NotFoundException(ERROR_MESSAGES.INVITATION.NOT_FOUND);
+    if (invite.status !== 'PENDING')
+      throw new BadRequestException(ERROR_MESSAGES.INVITATION.ALREADY_HANDLED);
+    if (invite.expiresAt < new Date())
+      throw new BadRequestException(ERROR_MESSAGES.INVITATION.EXPIRED);
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || user.email !== invite.email)
+      throw new ForbiddenException(ERROR_MESSAGES.INVITATION.EMAIL_MISMATCH);
+
+    await this.prisma.boardMember.create({
+      data: {
+        boardId: invite.boardId,
+        userId,
+        role: invite.role,
+      },
+    });
+
+    await this.prisma.boardInvitation.update({
+      where: { id: invite.id },
+      data: { status: 'ACCEPTED' },
+    });
+
+    return { message: SUCCESS_MESSAGES.COMMON.SUCCESS };
   }
 
   async removeMember(boardId: string, userId: string, ownerId: string) {

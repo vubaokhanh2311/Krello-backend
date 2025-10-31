@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsOptional, IsString, IsEnum } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsEnum,
+  IsEmail,
+} from 'class-validator';
 import { PaginationDto } from '../../../common/dtos/pagination.dto';
 import { RoleType } from '@prisma/client';
 export class CreateBoardDto {
@@ -38,8 +44,8 @@ export class BoardQueryDto extends PaginationDto {
 }
 
 export class InviteMemberDto {
-  @IsString()
-  userId: string;
+  @IsEmail()
+  email: string;
 
   @IsOptional()
   @IsEnum(RoleType)
