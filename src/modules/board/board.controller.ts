@@ -76,6 +76,15 @@ export class BoardController {
     return this.boardService.inviteMember(boardId, ownerId, dto);
   }
 
+  @Post('invite/confirm')
+  async confirmInvite(
+    @Query('token') token: string,
+    @Req() req: { user: JwtPayload },
+  ) {
+    const userId = req.user.uid;
+    return this.boardService.confirmInvite(token, userId);
+  }
+
   @Delete(':id/members/:userId')
   async removeMember(
     @Param('id') boardId: string,
