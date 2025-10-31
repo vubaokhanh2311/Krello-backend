@@ -21,5 +21,8 @@ export const ERROR_MESSAGES = {
   },
   BOARD: {
     NOT_FOUND: 'Board not found',
+    USER_ALREADY_A_MEMBER: 'User already a member of this board',
+    OWNER_NOT_BOARD: 'You are not the owner of this board',
+    NOT_MEMBER: 'Member not found in board',
   },
 } as const;

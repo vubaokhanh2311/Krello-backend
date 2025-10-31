@@ -2,13 +2,17 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { ERROR_MESSAGES } from '../../constants/error-messages.constant';
+import { SUCCESS_MESSAGES } from '../../constants/success-messages.constant';
+
 import {
   CreateBoardDto,
   UpdateBoardDto,
   BoardQueryDto,
+  InviteMemberDto,
 } from './dtos/board.dto';
 @Injectable()
 export class BoardService {
@@ -147,5 +151,61 @@ export class BoardService {
 
     await this.prisma.board.delete({ where: { id: boardId } });
     return { deleted: true };
+  }
+
+  async inviteMember(boardId: string, ownerId: string, dto: InviteMemberDto) {
+    const { userId, role } = dto;
+
+    const board = await this.prisma.board.findUnique({
+      where: { id: boardId },
+    });
+    if (!board) throw new NotFoundException(ERROR_MESSAGES.BOARD.NOT_FOUND);
+    if (board.ownerId !== ownerId)
+      throw new ForbiddenException(ERROR_MESSAGES.AUTH.ACCESS_DENIED);
+
+    const exists = await this.prisma.boardMember.findFirst({
+      where: { boardId, userId },
+    });
+    if (exists)
+      throw new BadRequestException(ERROR_MESSAGES.BOARD.USER_ALREADY_A_MEMBER);
+
+    const member = await this.prisma.boardMember.create({
+      data: { boardId, userId, role },
+      include: { user: { select: { id: true, name: true, email: true } } },
+    });
+
+    return { message: SUCCESS_MESSAGES.BOARD.SUCCESS_MEMBER, member };
+  }
+
+  async removeMember(boardId: string, userId: string, ownerId: string) {
+    const board = await this.prisma.board.findUnique({
+      where: { id: boardId },
+    });
+
+    if (!board) throw new NotFoundException(ERROR_MESSAGES.BOARD.NOT_FOUND);
+    if (board.ownerId !== ownerId)
+      throw new ForbiddenException(ERROR_MESSAGES.BOARD.OWNER_NOT_BOARD);
+
+    const member = await this.prisma.boardMember.findFirst({
+      where: { boardId, userId },
+    });
+    if (!member) throw new NotFoundException(ERROR_MESSAGES.BOARD.NOT_MEMBER);
+
+    await this.prisma.boardMember.delete({
+      where: { id: member.id },
+    });
+
+    return { message: SUCCESS_MESSAGES.BOARD.MEMBER_REMOVED };
+  }
+
+  async getMembers(boardId: string) {
+    const members = await this.prisma.boardMember.findMany({
+      where: { boardId },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    return members;
   }
 }
