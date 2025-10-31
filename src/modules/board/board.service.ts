@@ -6,11 +6,12 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { EmailService } from '../../shared/mail/email.services';
-import { randomBytes } from 'crypto';
 import { ERROR_MESSAGES } from '../../constants/error-messages.constant';
 import { SUCCESS_MESSAGES } from '../../constants/success-messages.constant';
 import { inviteEmailTemplate } from '../../assets/templates/invite-email.template';
-
+import { INVITESTATUS } from '../../constants/status.contant';
+import { INVITATION_EXPIRES_MS } from '../../constants/invitation.constants';
+import { generateRandomToken } from '../../helpers/token.helper';
 import {
   CreateBoardDto,
   UpdateBoardDto,
@@ -170,11 +171,11 @@ export class BoardService {
       throw new ForbiddenException(ERROR_MESSAGES.AUTH.ACCESS_DENIED);
 
     let invitation = await this.prisma.boardInvitation.findFirst({
-      where: { boardId, email, status: 'PENDING' },
+      where: { boardId, email, status: INVITESTATUS.PENDING },
     });
 
-    const token = randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7);
+    const token = generateRandomToken();
+    const expiresAt = new Date(Date.now() + INVITATION_EXPIRES_MS);
 
     if (invitation) {
       invitation = await this.prisma.boardInvitation.update({
@@ -204,7 +205,7 @@ export class BoardService {
     });
     if (!invite)
       throw new NotFoundException(ERROR_MESSAGES.INVITATION.NOT_FOUND);
-    if (invite.status !== 'PENDING')
+    if (invite.status !== INVITESTATUS.PENDING)
       throw new BadRequestException(ERROR_MESSAGES.INVITATION.ALREADY_HANDLED);
     if (invite.expiresAt < new Date())
       throw new BadRequestException(ERROR_MESSAGES.INVITATION.EXPIRED);
@@ -223,7 +224,7 @@ export class BoardService {
 
     await this.prisma.boardInvitation.update({
       where: { id: invite.id },
-      data: { status: 'ACCEPTED' },
+      data: { status: INVITESTATUS.ACCEPTED },
     });
 
     return { message: SUCCESS_MESSAGES.COMMON.SUCCESS };
