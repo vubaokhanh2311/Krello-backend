@@ -5,7 +5,7 @@ import {
   IsString,
   IsUrl,
 } from 'class-validator';
-
+import { PaginationDto } from '../../../common/dtos/pagination.dto';
 export class UpdateProfileDto {
   @IsOptional()
   name?: string;
@@ -20,4 +20,27 @@ export class UpdateAvatarDto {
   @IsString()
   @IsUrl()
   avatarUrl: string;
+}
+
+export class UpdateUserDto {
+  name?: string;
+  email?: string;
+  roleId?: string;
+}
+
+export class CreateUserDto {
+  name: string;
+  email: string;
+  password: string;
+  roleId?: string;
+}
+
+export class UserQueryDto extends PaginationDto {
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  email?: string;
 }
