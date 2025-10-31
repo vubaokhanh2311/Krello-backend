@@ -12,4 +12,9 @@ export const SUCCESS_MESSAGES = {
   COMMON: {
     SUCCESS: 'Action completed successfully',
   },
+  BOARD: {
+    NOT_FOUND: 'Board not found',
+    SUCCESS_MEMBER: 'Member invited successfully',
+    MEMBER_REMOVED: 'Member removed successfully',
+  },
 } as const;

@@ -8,10 +8,16 @@ import {
   Body,
   Req,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { BoardService } from './board.service';
-import { CreateBoardDto, UpdateBoardDto } from './dtos/board.dto';
+import {
+  CreateBoardDto,
+  UpdateBoardDto,
+  InviteMemberDto,
+  BoardQueryDto,
+} from './dtos/board.dto';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 @Controller('board')
@@ -20,8 +26,11 @@ export class BoardController {
   constructor(private readonly boardService: BoardService) {}
 
   @Get()
-  async findAll(@Req() req: Request & { user: JwtPayload }) {
-    return this.boardService.findAll(req.user.uid);
+  async findAll(
+    @Req() req: { user: JwtPayload },
+    @Query() query: BoardQueryDto,
+  ) {
+    return this.boardService.findAll(req.user.uid, query);
   }
 
   @Get(':id')
@@ -55,5 +64,30 @@ export class BoardController {
     @Param('id') id: string,
   ) {
     return this.boardService.remove(req.user.uid, id);
+  }
+
+  @Post(':id/members')
+  async inviteMember(
+    @Param('id') boardId: string,
+    @Body() dto: InviteMemberDto,
+    @Req() req: { user: JwtPayload },
+  ) {
+    const ownerId = req.user.uid;
+    return this.boardService.inviteMember(boardId, ownerId, dto);
+  }
+
+  @Delete(':id/members/:userId')
+  async removeMember(
+    @Param('id') boardId: string,
+    @Param('userId') userId: string,
+    @Req() req: { user: JwtPayload },
+  ) {
+    const ownerId = req.user.uid;
+    return this.boardService.removeMember(boardId, userId, ownerId);
+  }
+
+  @Get(':id/members')
+  async getMembers(@Param('id') boardId: string) {
+    return this.boardService.getMembers(boardId);
   }
 }
