@@ -1,24 +1,80 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
-import { CreateListDto, UpdateListDto } from './dtos/list.dto';
+import { CreateListDto, UpdateListDto, ListQueryDto } from './dtos/list.dto';
 import { ROLETYPE } from '../../constants/role-type.constant';
 import { ERROR_MESSAGES } from '../../constants/error-messages.constant';
 
 @Injectable()
 export class ListService {
   constructor(private prisma: PrismaService) {}
-  async findAll(boardId: string) {
-    const list = await this.prisma.list.findMany({
+
+  async findAll(boardId: string, userId: string, query: ListQueryDto) {
+    const page = Number(query.page) || 1;
+    const pageSize = Number(query.pageSize) || 10;
+    const skip = (page - 1) * pageSize;
+    const take = pageSize;
+
+    const board = await this.prisma.board.findUnique({
       where: { id: boardId },
       select: {
-        id: true,
-        title: true,
-        position: true,
-        createdAt: true,
-        updatedAt: true,
+        ownerId: true,
+        members: { select: { userId: true } },
       },
     });
-    return list;
+
+    if (!board) throw new NotFoundException(ERROR_MESSAGES.BOARD.NOT_FOUND);
+
+    const isOwner = board.ownerId === userId;
+    const isMember = board.members.some((m) => m.userId === userId);
+
+    if (!isOwner && !isMember) {
+      throw new ForbiddenException(ERROR_MESSAGES.BOARD.NOT_MEMBER);
+    }
+
+    const where: any = { boardId };
+
+    if (query.title) {
+      where.title = { contains: query.title, mode: 'insensitive' };
+    }
+    if (query.position) {
+      where.position = { equals: Number(query.position) };
+    }
+
+    const orderBy = query.order?.includes(':')
+      ? (() => {
+          const [field, dir] = query.order.split(':');
+          return { [field]: dir?.toUpperCase() === 'DESC' ? 'desc' : 'asc' };
+        })()
+      : { createdAt: 'desc' };
+
+    const select = query.fields
+      ? Object.fromEntries(query.fields.split(',').map((f) => [f.trim(), true]))
+      : {
+          id: true,
+          title: true,
+          position: true,
+          createdAt: true,
+          updatedAt: true,
+        };
+
+    const [data, total] = await Promise.all([
+      this.prisma.list.findMany({ where, skip, take, orderBy, select }),
+      this.prisma.list.count({ where }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
+      },
+    };
   }
 
   async create(userId: string, boardId: string, dto: CreateListDto) {

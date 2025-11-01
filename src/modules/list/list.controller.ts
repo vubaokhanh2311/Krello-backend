@@ -8,10 +8,11 @@ import {
   Req,
   Put,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { ListService } from './list.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CreateListDto, UpdateListDto } from './dtos/list.dto';
+import { CreateListDto, UpdateListDto, ListQueryDto } from './dtos/list.dto';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 @UseGuards(JwtAuthGuard)
@@ -19,8 +20,12 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 export class ListController {
   constructor(private readonly listService: ListService) {}
   @Get(':boardId/lists')
-  async findAll(@Param('boardId') boardId: string) {
-    return this.listService.findAll(boardId);
+  async findAll(
+    @Req() req: Request & { user: JwtPayload },
+    @Param('boardId') boardId: string,
+    @Query() query: ListQueryDto,
+  ) {
+    return this.listService.findAll(boardId, req.user.uid, query);
   }
 
   @Post(':boardId/lists')
