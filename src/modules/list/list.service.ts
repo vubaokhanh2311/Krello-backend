@@ -7,6 +7,7 @@ import { PrismaService } from '../../shared/prisma/prisma.service';
 import { CreateListDto, UpdateListDto, ListQueryDto } from './dtos/list.dto';
 import { ROLETYPE } from '../../constants/role-type.constant';
 import { ERROR_MESSAGES } from '../../constants/error-messages.constant';
+import { SUCCESS_MESSAGES } from '../../constants/success-messages.constant';
 
 @Injectable()
 export class ListService {
@@ -181,6 +182,6 @@ export class ListService {
 
     await this.prisma.list.delete({ where: { id: listId } });
 
-    return { deleted: true };
+    return { message: SUCCESS_MESSAGES.COMMON.SUCCESS };
   }
 }

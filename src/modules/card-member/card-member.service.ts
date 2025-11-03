@@ -6,6 +6,7 @@ import {
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { CreateCardMenberDto } from './dtos/card-member.dto';
 import { ERROR_MESSAGES } from 'src/constants/error-messages.constant';
+import { SUCCESS_MESSAGES } from '../../constants/success-messages.constant';
 
 @Injectable()
 export class CardMemberService {
@@ -100,8 +101,10 @@ export class CardMemberService {
       throw new ForbiddenException(ERROR_MESSAGES.CARD.ACCESS_DENIED);
     }
 
-    return this.prisma.cardMember.delete({
+    await this.prisma.cardMember.delete({
       where: { id: cardMemberId },
     });
+
+    return { message: SUCCESS_MESSAGES.COMMON.SUCCESS };
   }
 }

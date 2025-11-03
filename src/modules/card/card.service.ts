@@ -7,6 +7,8 @@ import { PrismaService } from '../../shared/prisma/prisma.service';
 import { CardQueryDto, CreateCardDto, UpdateCardDto } from './dtos/card.dto';
 import { ERROR_MESSAGES } from 'src/constants/error-messages.constant';
 import { ROLETYPE } from '../../constants/role-type.constant';
+import { SUCCESS_MESSAGES } from '../../constants/success-messages.constant';
+
 @Injectable()
 export class CardService {
   constructor(private prisma: PrismaService) {}
@@ -227,6 +229,6 @@ export class CardService {
       where: { id: cardId },
     });
 
-    return { deleted: true };
+    return { message: SUCCESS_MESSAGES.COMMON.SUCCESS };
   }
 }
