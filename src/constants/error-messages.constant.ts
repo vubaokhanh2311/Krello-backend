@@ -28,6 +28,10 @@ export const ERROR_MESSAGES = {
   CARD: {
     NOT_FOUND: 'Card not found.',
     ACCESS_DENIED: 'You do not have permission to access this card.',
+    MEMBER_ALREADY_EXISTS: 'You do not have permission to access this card.',
+  },
+  CARD_MEMBER: {
+    NOT_FOUND: 'CardMember not found.',
   },
   INVITATION: {
     NOT_FOUND: 'Invitation not found',

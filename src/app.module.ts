@@ -14,6 +14,7 @@ import { ListModule } from './modules/list/list.module';
 import { CardService } from './modules/card/card.service';
 import { CardController } from './modules/card/card.controller';
 import { CardModule } from './modules/card/card.module';
+import { CardMemberModule } from './modules/card-member/card-member.module';
 @Module({
   imports: [
     SharedModule,
@@ -23,6 +24,7 @@ import { CardModule } from './modules/card/card.module';
     BoardModule,
     ListModule,
     CardModule,
+    CardMemberModule,
   ],
   controllers: [AppController, UserController, ListController, CardController],
   providers: [AppService, UserService, ListService, CardService],
