@@ -25,6 +25,10 @@ export const ERROR_MESSAGES = {
     OWNER_NOT_BOARD: 'You are not the owner of this board',
     NOT_MEMBER: 'Member not found in board',
   },
+  CARD: {
+    NOT_FOUND: 'Card not found.',
+    ACCESS_DENIED: 'You do not have permission to access this card.',
+  },
   INVITATION: {
     NOT_FOUND: 'Invitation not found',
     ALREADY_HANDLED: 'Invitation already handled',

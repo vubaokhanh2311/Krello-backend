@@ -11,6 +11,9 @@ import { BoardModule } from './modules/board/board.module';
 import { ListService } from './modules/list/list.service';
 import { ListController } from './modules/list/list.controller';
 import { ListModule } from './modules/list/list.module';
+import { CardService } from './modules/card/card.service';
+import { CardController } from './modules/card/card.controller';
+import { CardModule } from './modules/card/card.module';
 @Module({
   imports: [
     SharedModule,
@@ -19,8 +22,9 @@ import { ListModule } from './modules/list/list.module';
     UserModule,
     BoardModule,
     ListModule,
+    CardModule,
   ],
-  controllers: [AppController, UserController, ListController],
-  providers: [AppService, UserService, ListService],
+  controllers: [AppController, UserController, ListController, CardController],
+  providers: [AppService, UserService, ListService, CardService],
 })
 export class AppModule {}
