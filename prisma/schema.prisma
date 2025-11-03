@@ -24,10 +24,10 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  boardsOwned     Board[]           @relation("BoardOwner")
-  boardMembers    BoardMember[]
-  cardsCreated    Card[]            @relation("CardCreator")
-  cardsAssigned   Card[]            @relation("CardAssignee")
+  boardsOwned  Board[]       @relation("BoardOwner")
+  boardMembers BoardMember[]
+  cardsCreated Card[]        @relation("CardCreator")
+
   comments        Comment[]
   activities      Activity[]
   attachments     Attachment[]
@@ -36,6 +36,7 @@ model User {
   roleId          String?
   role            Role?             @relation(fields: [roleId], references: [id])
   BoardInvitation BoardInvitation[]
+  cardMembers     CardMember[]
 }
 
 model Role {
@@ -154,13 +155,24 @@ model Card {
   createdBy String
   creator   User   @relation("CardCreator", fields: [createdBy], references: [id])
 
-  assignedTo String?
-  assignee   User?   @relation("CardAssignee", fields: [assignedTo], references: [id])
-
   comments    Comment[]
   attachments Attachment[]
   checklists  Checklist[]
   labels      CardLabel[]
+  members     CardMember[]
+}
+
+model CardMember {
+  id       String   @id @default(uuid())
+  joinedAt DateTime @default(now())
+
+  cardId String
+  card   Card   @relation(fields: [cardId], references: [id])
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([cardId, userId])
 }
 
 model Label {
