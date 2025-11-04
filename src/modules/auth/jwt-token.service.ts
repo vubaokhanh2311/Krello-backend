@@ -4,12 +4,12 @@ import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 import { RedisService } from '../../shared/redis/redis.service';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
-import { REFRESH_TOKEN_TTL } from '../../constants/cache.constant';
+
 import {
   genRefreshTokenKey,
   genRevokeKey,
 } from '../../helpers/gen-redis-key.helper';
-import { ERROR_MESSAGES } from '../../constants/error-messages.constant';
+import { ERROR_MESSAGES, REFRESH_TOKEN_TTL } from '../../constants/index';
 @Injectable()
 export class JwtTokenService {
   constructor(

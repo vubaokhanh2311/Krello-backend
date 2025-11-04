@@ -1,48 +1,37 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { CardQueryDto, CreateCardDto, UpdateCardDto } from './dtos/card.dto';
-import { ERROR_MESSAGES } from 'src/constants/error-messages.constant';
-import { ROLETYPE } from '../../constants/role-type.constant';
-import { SUCCESS_MESSAGES } from '../../constants/success-messages.constant';
-
+import {
+  SUCCESS_MESSAGES,
+  ROLETYPE,
+  ERROR_MESSAGES,
+} from '../../constants/index';
+import {
+  getPagination,
+  parseOrder,
+  parseSelectFields,
+  checkBoardAccess,
+  buildMeta,
+} from '../../common/utils/index';
 @Injectable()
 export class CardService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(listId: string, userId: string, query: CardQueryDto) {
-    const page = Number(query.page) || 1;
-    const pageSize = Number(query.pageSize) || 10;
-    const skip = (page - 1) * pageSize;
-    const take = pageSize;
+    const { page, pageSize, skip, take } = getPagination(query);
 
     const list = await this.prisma.list.findUnique({
       where: { id: listId },
       select: {
-        board: {
-          select: {
-            ownerId: true,
-            members: { select: { userId: true } },
-          },
-        },
+        board: { select: { id: true } },
       },
     });
 
     if (!list) {
-      throw new NotFoundException(ERROR_MESSAGES.CARD.NOT_FOUND);
+      throw new NotFoundException(ERROR_MESSAGES.LIST.NOT_FOUND);
     }
 
-    const board = list.board;
-
-    const isOwner = board.ownerId === userId;
-    const isMember = board.members.some((m) => m.userId === userId);
-
-    if (!isOwner && !isMember) {
-      throw new ForbiddenException(ERROR_MESSAGES.BOARD.NOT_MEMBER);
-    }
+    await checkBoardAccess(this.prisma, list.board.id, userId);
 
     const where: any = { listId };
 
@@ -59,26 +48,18 @@ export class CardService {
       where.position = { equals: Number(query.position) };
     }
 
-    const orderBy = query.order?.includes(':')
-      ? (() => {
-          const [field, dir] = query.order.split(':');
-          return { [field]: dir?.toUpperCase() === 'DESC' ? 'desc' : 'asc' };
-        })()
-      : { createdAt: 'desc' };
-
-    const select = query.fields
-      ? Object.fromEntries(query.fields.split(',').map((f) => [f.trim(), true]))
-      : {
-          id: true,
-          title: true,
-          description: true,
-          position: true,
-          dueDate: true,
-          createdBy: true,
-          members: true,
-          createdAt: true,
-          updatedAt: true,
-        };
+    const orderBy = parseOrder(query.order);
+    const select = parseSelectFields(query.fields, {
+      id: true,
+      title: true,
+      description: true,
+      position: true,
+      dueDate: true,
+      createdBy: true,
+      members: true,
+      createdAt: true,
+      updatedAt: true,
+    });
 
     const [data, total] = await Promise.all([
       this.prisma.card.findMany({ where, skip, take, orderBy, select }),
@@ -87,12 +68,7 @@ export class CardService {
 
     return {
       data,
-      meta: {
-        total,
-        page,
-        pageSize,
-        totalPages: Math.ceil(total / pageSize),
-      },
+      meta: buildMeta(total, page, pageSize),
     };
   }
 
@@ -100,28 +76,17 @@ export class CardService {
     const list = await this.prisma.list.findUnique({
       where: { id: listId },
       select: {
-        board: {
-          select: {
-            ownerId: true,
-            members: { select: { userId: true, role: true } },
-          },
-        },
+        board: { select: { id: true } },
       },
     });
 
     if (!list) {
-      throw new NotFoundException(ERROR_MESSAGES.CARD.NOT_FOUND);
+      throw new NotFoundException(ERROR_MESSAGES.LIST.NOT_FOUND);
     }
 
-    const board = list.board;
-    const isOwner = board.ownerId === userId;
-    const member = board.members.find((m) => m.userId === userId);
-    const memberRole = member?.role as ROLETYPE;
-    const canCreate = isOwner || memberRole === ROLETYPE.EDITOR;
-
-    if (!canCreate) {
-      throw new ForbiddenException(ERROR_MESSAGES.CARD.ACCESS_DENIED);
-    }
+    await checkBoardAccess(this.prisma, list.board.id, userId, [
+      ROLETYPE.EDITOR,
+    ]);
 
     return this.prisma.card.create({
       data: {
@@ -152,28 +117,17 @@ export class CardService {
     const list = await this.prisma.list.findUnique({
       where: { id: listId },
       select: {
-        board: {
-          select: {
-            ownerId: true,
-            members: { select: { userId: true, role: true } },
-          },
-        },
+        board: { select: { id: true } },
       },
     });
 
     if (!list) {
-      throw new NotFoundException(ERROR_MESSAGES.CARD.NOT_FOUND);
+      throw new NotFoundException(ERROR_MESSAGES.LIST.NOT_FOUND);
     }
 
-    const board = list.board;
-    const isOwner = board.ownerId === userId;
-    const member = board.members.find((m) => m.userId === userId);
-    const memberRole = member?.role as ROLETYPE;
-    const canCreate = isOwner || memberRole === ROLETYPE.EDITOR;
-
-    if (!canCreate) {
-      throw new ForbiddenException(ERROR_MESSAGES.CARD.ACCESS_DENIED);
-    }
+    await checkBoardAccess(this.prisma, list.board.id, userId, [
+      ROLETYPE.EDITOR,
+    ]);
 
     return this.prisma.card.update({
       where: { id: cardId },
@@ -199,13 +153,7 @@ export class CardService {
         id: true,
         list: {
           select: {
-            id: true,
-            board: {
-              select: {
-                ownerId: true,
-                members: { select: { userId: true, role: true } },
-              },
-            },
+            boardId: true,
           },
         },
       },
@@ -215,15 +163,9 @@ export class CardService {
       throw new NotFoundException(ERROR_MESSAGES.CARD.NOT_FOUND);
     }
 
-    const board = card.list.board;
-    const isOwner = board.ownerId === userId;
-    const member = board.members.find((m) => m.userId === userId);
-    const memberRole = member?.role as ROLETYPE;
-    const canDelete = isOwner || memberRole === ROLETYPE.EDITOR;
+    const boardId = card.list.boardId;
 
-    if (!canDelete) {
-      throw new ForbiddenException(ERROR_MESSAGES.CARD.ACCESS_DENIED);
-    }
+    await checkBoardAccess(this.prisma, boardId, userId, [ROLETYPE.EDITOR]);
 
     await this.prisma.card.delete({
       where: { id: cardId },

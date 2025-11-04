@@ -9,10 +9,14 @@ import { JwtTokenService } from './jwt-token.service';
 import { ConfigService } from '@nestjs/config';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { RedisService } from '../../shared/redis/redis.service';
-import { ERROR_MESSAGES } from '../../constants/error-messages.constant';
-import { SUCCESS_MESSAGES } from '../../constants/success-messages.constant';
-import { USER_PERMISSIONS } from '../../constants/cache.constant';
+import {
+  SUCCESS_MESSAGES,
+  ERROR_MESSAGES,
+  USER_PERMISSIONS,
+} from '../../constants/index';
+
 import { genUserPermissionKey } from '../../helpers/gen-key.helper';
+
 @Injectable()
 export class AuthService {
   constructor(

@@ -5,9 +5,9 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { CreateCardMenberDto } from './dtos/card-member.dto';
-import { ERROR_MESSAGES } from 'src/constants/error-messages.constant';
-import { SUCCESS_MESSAGES } from '../../constants/success-messages.constant';
+import { ERROR_MESSAGES, SUCCESS_MESSAGES } from 'src/constants/index';
 
+import { checkBoardAccess } from '../../common/utils/index';
 @Injectable()
 export class CardMemberService {
   constructor(private prisma: PrismaService) {}
@@ -18,12 +18,7 @@ export class CardMemberService {
         id: true,
         list: {
           select: {
-            board: {
-              select: {
-                id: true,
-                ownerId: true,
-              },
-            },
+            boardId: true,
           },
         },
       },
@@ -33,11 +28,8 @@ export class CardMemberService {
       throw new NotFoundException(ERROR_MESSAGES.CARD.NOT_FOUND);
     }
 
-    const board = card.list.board;
-
-    if (board.ownerId !== userId) {
-      throw new ForbiddenException(ERROR_MESSAGES.CARD.ACCESS_DENIED);
-    }
+    const boardId = card.list.boardId;
+    await checkBoardAccess(this.prisma, boardId, userId, [], true);
 
     const existingMember = await this.prisma.cardMember.findUnique({
       where: {
@@ -79,12 +71,7 @@ export class CardMemberService {
           select: {
             list: {
               select: {
-                board: {
-                  select: {
-                    id: true,
-                    ownerId: true,
-                  },
-                },
+                boardId: true,
               },
             },
           },
@@ -96,10 +83,8 @@ export class CardMemberService {
       throw new NotFoundException(ERROR_MESSAGES.CARD_MEMBER.NOT_FOUND);
     }
 
-    const isOwner = cardMember.card.list.board.ownerId === userId;
-    if (!isOwner) {
-      throw new ForbiddenException(ERROR_MESSAGES.CARD.ACCESS_DENIED);
-    }
+    const boardId = cardMember.card.list.boardId;
+    await checkBoardAccess(this.prisma, boardId, userId, [], true);
 
     await this.prisma.cardMember.delete({
       where: { id: cardMemberId },

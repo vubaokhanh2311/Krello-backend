@@ -14,7 +14,12 @@ import {
   CreateUserDto,
   UserQueryDto,
 } from './dtos/user.dto';
-
+import {
+  getPagination,
+  parseOrder,
+  parseSelectFields,
+  buildMeta,
+} from '../../common/utils/index';
 @Injectable()
 export class UserService {
   constructor(private prisma: PrismaService) {}
@@ -54,10 +59,7 @@ export class UserService {
   }
 
   async findAll(query: UserQueryDto) {
-    const page = Number(query.page) || 1;
-    const pageSize = Number(query.pageSize) || 10;
-    const skip = (page - 1) * pageSize;
-    const take = pageSize;
+    const { page, pageSize, skip, take } = getPagination(query);
 
     const where: any = {};
     if (query.name) {
@@ -67,29 +69,17 @@ export class UserService {
       where.email = { contains: query.email, mode: 'insensitive' };
     }
 
-    let orderBy: any = undefined;
-    if (query.order) {
-      const [field, direction] = query.order.split(':');
-      orderBy = {
-        [field]: direction?.toUpperCase() === 'DESC' ? 'desc' : 'asc',
-      };
-    }
+    const orderBy = parseOrder(query.order);
 
-    let select: any = undefined;
-    if (query.fields) {
-      select = {};
-      query.fields.split(',').forEach((f) => (select[f.trim()] = true));
-    } else {
-      select = {
-        id: true,
-        name: true,
-        email: true,
-        avatarUrl: true,
-        roleId: true,
-        createdAt: true,
-        updatedAt: true,
-      };
-    }
+    const select = parseSelectFields(query.fields, {
+      id: true,
+      name: true,
+      email: true,
+      avatarUrl: true,
+      roleId: true,
+      createdAt: true,
+      updatedAt: true,
+    });
 
     const [data, total] = await Promise.all([
       this.prisma.user.findMany({
@@ -104,12 +94,7 @@ export class UserService {
 
     return {
       data,
-      meta: {
-        total,
-        page,
-        pageSize,
-        totalPages: Math.ceil(total / pageSize),
-      },
+      meta: buildMeta(total, page, pageSize),
     };
   }
 
