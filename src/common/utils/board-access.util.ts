@@ -8,7 +8,7 @@ export async function checkBoardAccess(
   boardId: string,
   userId: string,
   allowedRoles: ROLETYPE[] = [ROLETYPE.VIEWER, ROLETYPE.EDITOR],
-  ownerOnly = false, // 👈 thêm tham số tùy chọn
+  ownerOnly = false,
 ) {
   const board = await prisma.board.findUnique({
     where: { id: boardId },
@@ -26,12 +26,10 @@ export async function checkBoardAccess(
   const member = board.members.find((m) => m.userId === userId);
   const memberRole = member?.role as ROLETYPE;
 
-  // 👇 nếu chỉ owner mới được phép
   if (ownerOnly && !isOwner) {
     throw new ForbiddenException(ERROR_MESSAGES.AUTH.ACCESS_DENIED);
   }
 
-  // 👇 nếu không phải ownerOnly thì kiểm tra quyền thông thường
   const canAccess = isOwner || allowedRoles.includes(memberRole);
 
   if (!canAccess) {
