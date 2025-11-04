@@ -33,6 +33,12 @@ export const ERROR_MESSAGES = {
   CARD_MEMBER: {
     NOT_FOUND: 'CardMember not found.',
   },
+  LIST: {
+    NOT_FOUND: 'Card not found.',
+  },
+  LABEL: {
+    NOT_FOUND: 'Card not found.',
+  },
   INVITATION: {
     NOT_FOUND: 'Invitation not found',
     ALREADY_HANDLED: 'Invitation already handled',

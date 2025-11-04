@@ -6,11 +6,13 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { EmailService } from '../../shared/mail/email.services';
-import { ERROR_MESSAGES } from '../../constants/error-messages.constant';
-import { SUCCESS_MESSAGES } from '../../constants/success-messages.constant';
 import { inviteEmailTemplate } from '../../assets/templates/invite-email.template';
-import { INVITESTATUS } from '../../constants/status.contant';
-import { INVITATION_EXPIRES_MS } from '../../constants/invitation.constants';
+import {
+  INVITATION_EXPIRES_MS,
+  INVITESTATUS,
+  SUCCESS_MESSAGES,
+  ERROR_MESSAGES,
+} from '../../constants/index';
 import { generateRandomToken } from '../../helpers/token.helper';
 import {
   CreateBoardDto,
@@ -18,6 +20,12 @@ import {
   BoardQueryDto,
   InviteMemberDto,
 } from './dtos/board.dto';
+import {
+  getPagination,
+  parseOrder,
+  parseSelectFields,
+  buildMeta,
+} from '../../common/utils/index';
 @Injectable()
 export class BoardService {
   constructor(
@@ -26,10 +34,7 @@ export class BoardService {
   ) {}
 
   async findAll(userId: string, query: BoardQueryDto) {
-    const page = Number(query.page) || 1;
-    const pageSize = Number(query.pageSize) || 10;
-    const skip = (page - 1) * pageSize;
-    const take = pageSize;
+    const { page, pageSize, skip, take } = getPagination(query);
 
     const where: any = { ownerId: userId };
     if (query.name) {
@@ -39,30 +44,16 @@ export class BoardService {
       where.background = { contains: query.background, mode: 'insensitive' };
     }
 
-    let orderBy: any = undefined;
-    if (query.order) {
-      const [field, direction] = query.order.split(':');
-      orderBy = {
-        [field]: direction?.toUpperCase() === 'DESC' ? 'desc' : 'asc',
-      };
-    } else {
-      orderBy = { createdAt: 'desc' };
-    }
+    const orderBy = parseOrder(query.order);
 
-    let select: any = undefined;
-    if (query.fields) {
-      select = {};
-      query.fields.split(',').forEach((f) => (select[f.trim()] = true));
-    } else {
-      select = {
-        id: true,
-        name: true,
-        description: true,
-        background: true,
-        createdAt: true,
-        updatedAt: true,
-      };
-    }
+    const select = parseSelectFields(query.fields, {
+      id: true,
+      name: true,
+      description: true,
+      background: true,
+      createdAt: true,
+      updatedAt: true,
+    });
 
     const [data, total] = await Promise.all([
       this.prisma.board.findMany({
@@ -77,12 +68,7 @@ export class BoardService {
 
     return {
       data,
-      meta: {
-        total,
-        page,
-        pageSize,
-        totalPages: Math.ceil(total / pageSize),
-      },
+      meta: buildMeta(total, page, pageSize),
     };
   }
 
