@@ -20,6 +20,7 @@ import { LabelModule } from './modules/label/label.module';
 import { CardLabelService } from './modules/card-label/card-label.service';
 import { CardLabelController } from './modules/card-label/card-label.controller';
 import { CardLabelModule } from './modules/card-label/card-label.module';
+import { AttachmentModule } from './modules/attachment/attachment.module';
 @Module({
   imports: [
     SharedModule,
@@ -32,6 +33,7 @@ import { CardLabelModule } from './modules/card-label/card-label.module';
     CardMemberModule,
     LabelModule,
     CardLabelModule,
+    AttachmentModule,
   ],
   controllers: [AppController, UserController, ListController, CardController, LabelController, CardLabelController],
   providers: [AppService, UserService, ListService, CardService, CardLabelService],
