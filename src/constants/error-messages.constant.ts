@@ -39,6 +39,9 @@ export const ERROR_MESSAGES = {
   LABEL: {
     NOT_FOUND: 'Card not found.',
   },
+  CARD_LABEL: {
+    NOT_FOUND: 'CardLabel not found.',
+  },
   INVITATION: {
     NOT_FOUND: 'Invitation not found',
     ALREADY_HANDLED: 'Invitation already handled',
