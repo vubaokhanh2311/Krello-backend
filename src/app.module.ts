@@ -17,6 +17,9 @@ import { CardModule } from './modules/card/card.module';
 import { CardMemberModule } from './modules/card-member/card-member.module';
 import { LabelController } from './modules/label/label.controller';
 import { LabelModule } from './modules/label/label.module';
+import { CardLabelService } from './modules/card-label/card-label.service';
+import { CardLabelController } from './modules/card-label/card-label.controller';
+import { CardLabelModule } from './modules/card-label/card-label.module';
 @Module({
   imports: [
     SharedModule,
@@ -28,8 +31,9 @@ import { LabelModule } from './modules/label/label.module';
     CardModule,
     CardMemberModule,
     LabelModule,
+    CardLabelModule,
   ],
-  controllers: [AppController, UserController, ListController, CardController, LabelController],
-  providers: [AppService, UserService, ListService, CardService],
+  controllers: [AppController, UserController, ListController, CardController, LabelController, CardLabelController],
+  providers: [AppService, UserService, ListService, CardService, CardLabelService],
 })
 export class AppModule {}

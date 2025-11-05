@@ -1,0 +1,39 @@
+import {
+  Controller,
+  Param,
+  Req,
+  UseGuards,
+  Post,
+  Body,
+  Delete,
+} from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CreateCardLabelDto } from './dtos/card-label.dto';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { CardLabelService } from './card-label.service';
+
+@UseGuards(JwtAuthGuard)
+@Controller('card')
+export class CardLabelController {
+  constructor(private readonly cardLabelService: CardLabelService) {}
+
+  @Post(':cardId/labels')
+  async create(
+    @Req() req: Request & { user: JwtPayload },
+    @Param('cardId') cardId: string,
+    @Body() dto: CreateCardLabelDto,
+  ) {
+    const userId = req.user.uid;
+    return this.cardLabelService.create(userId, cardId, dto);
+  }
+
+  @Delete(':cardId/labels/:labelId')
+  async remove(
+    @Req() req: Request & { user: JwtPayload },
+    @Param('cardId') cardId: string,
+    @Param('labelId') labelId: string,
+  ) {
+    const userId = req.user.uid;
+    return this.cardLabelService.remove(userId, cardId, labelId);
+  }
+}
