@@ -21,6 +21,7 @@ import { CardLabelService } from './modules/card-label/card-label.service';
 import { CardLabelController } from './modules/card-label/card-label.controller';
 import { CardLabelModule } from './modules/card-label/card-label.module';
 import { AttachmentModule } from './modules/attachment/attachment.module';
+import { CommentModule } from './modules/comment/comment.module';
 @Module({
   imports: [
     SharedModule,
@@ -34,6 +35,7 @@ import { AttachmentModule } from './modules/attachment/attachment.module';
     LabelModule,
     CardLabelModule,
     AttachmentModule,
+    CommentModule,
   ],
   controllers: [AppController, UserController, ListController, CardController, LabelController, CardLabelController],
   providers: [AppService, UserService, ListService, CardService, CardLabelService],
