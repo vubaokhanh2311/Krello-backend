@@ -45,6 +45,10 @@ export const ERROR_MESSAGES = {
   ATTACHMENT: {
     NOT_FOUND: 'CardLabel not found.',
   },
+  COMMENT: {
+    NOT_FOUND: 'Comment not found.',
+  },
+
   INVITATION: {
     NOT_FOUND: 'Invitation not found',
     ALREADY_HANDLED: 'Invitation already handled',
