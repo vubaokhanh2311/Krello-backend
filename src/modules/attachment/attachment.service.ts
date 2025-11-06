@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 
 import {
@@ -171,6 +175,27 @@ export class AttachmentService {
     await checkBoardAccess(this.prisma, card.list.boardId, userId, [
       ROLETYPE.EDITOR,
     ]);
+
+    const attachment = await this.prisma.attachment.findUnique({
+      where: { id: attachmentId },
+      select: {
+        id: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!attachment) {
+      throw new NotFoundException(ERROR_MESSAGES.ATTACHMENT.NOT_FOUND);
+    }
+
+    if (attachment.user.id !== userId) {
+      throw new ForbiddenException(ERROR_MESSAGES.USER.NOT_FOUND_UPDATE);
+    }
 
     return this.prisma.attachment.update({
       where: { id: attachmentId },
