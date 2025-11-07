@@ -16,11 +16,11 @@ import { CardQueryDto, CreateCardDto, UpdateCardDto } from './dtos/card.dto';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 @UseGuards(JwtAuthGuard)
-@Controller('list')
+@Controller('lists/:listId')
 export class CardController {
   constructor(private readonly cardService: CardService) {}
 
-  @Get(':listId/cards')
+  @Get('cards')
   async findAll(
     @Req() req: Request & { user: JwtPayload },
     @Param('listId') listId: string,
@@ -29,7 +29,7 @@ export class CardController {
     return this.cardService.findAll(listId, req.user.uid, query);
   }
 
-  @Post(':listId/cards')
+  @Post('cards')
   async create(
     @Req() req: Request & { user: JwtPayload },
     @Param('listId') listId: string,
@@ -39,7 +39,7 @@ export class CardController {
     return this.cardService.create(userId, listId, dto);
   }
 
-  @Put(':listId/cards/:cardId')
+  @Put('cards/:cardId')
   async update(
     @Req() req: Request & { user: { uid: string } },
     @Param('listId') listId: string,
@@ -50,7 +50,7 @@ export class CardController {
     return this.cardService.update(userId, listId, cardId, dto);
   }
 
-  @Delete(':listId/cards/:cardId')
+  @Delete('cards/:cardId')
   async remove(
     @Req() req: Request & { user: JwtPayload },
     @Param('cardId') cardId: string,

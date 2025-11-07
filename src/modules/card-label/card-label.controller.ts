@@ -13,11 +13,11 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { CardLabelService } from './card-label.service';
 
 @UseGuards(JwtAuthGuard)
-@Controller('card')
+@Controller('cards/:cardId')
 export class CardLabelController {
   constructor(private readonly cardLabelService: CardLabelService) {}
 
-  @Post(':cardId/labels')
+  @Post('labels')
   async create(
     @Req() req: Request & { user: JwtPayload },
     @Param('cardId') cardId: string,
@@ -27,7 +27,7 @@ export class CardLabelController {
     return this.cardLabelService.create(userId, cardId, dto);
   }
 
-  @Delete(':cardId/labels/:labelId')
+  @Delete('labels/:labelId')
   async remove(
     @Req() req: Request & { user: JwtPayload },
     @Param('cardId') cardId: string,

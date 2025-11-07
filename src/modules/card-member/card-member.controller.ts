@@ -13,11 +13,11 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { CardMemberService } from './card-member.service';
 
 @UseGuards(JwtAuthGuard)
-@Controller('card')
+@Controller('cards/:cardId')
 export class CardMemberController {
   constructor(private readonly cardMemberService: CardMemberService) {}
 
-  @Post(':cardId/members')
+  @Post('members')
   async create(
     @Req() req: Request & { user: JwtPayload },
     @Param('cardId') cardId: string,
@@ -27,7 +27,7 @@ export class CardMemberController {
     return this.cardMemberService.create(userId, cardId, dto);
   }
 
-  @Delete(':cardId/members/:memberId')
+  @Delete('members/:memberId')
   async remove(
     @Req() req: Request & { user: JwtPayload },
     @Param('memberId') memberId: string,

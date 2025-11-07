@@ -16,10 +16,10 @@ import { CreateListDto, UpdateListDto, ListQueryDto } from './dtos/list.dto';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 @UseGuards(JwtAuthGuard)
-@Controller('board')
+@Controller('boards/:boardId')
 export class ListController {
   constructor(private readonly listService: ListService) {}
-  @Get(':boardId/lists')
+  @Get('lists')
   async findAll(
     @Req() req: Request & { user: JwtPayload },
     @Param('boardId') boardId: string,
@@ -28,7 +28,7 @@ export class ListController {
     return this.listService.findAll(boardId, req.user.uid, query);
   }
 
-  @Post(':boardId/lists')
+  @Post('lists')
   async create(
     @Req() req: Request & { user: JwtPayload },
     @Param('boardId') boardId: string,
@@ -38,7 +38,7 @@ export class ListController {
     return this.listService.create(userId, boardId, dto);
   }
 
-  @Put(':boardId/lists/:listId')
+  @Put('lists/:listId')
   async update(
     @Req() req: Request & { user: { uid: string } },
     @Param('boardId') boardId: string,
@@ -49,7 +49,7 @@ export class ListController {
     return this.listService.update(userId, boardId, listId, dto);
   }
 
-  @Delete(':boardId/lists/:listId')
+  @Delete('lists/:listId')
   async remove(
     @Req() req: Request & { user: JwtPayload },
     @Param('listId') listId: string,
