@@ -31,7 +31,7 @@ import sharp from 'sharp';
 import { join } from 'path';
 import * as fs from 'fs';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
-@Controller('user')
+@Controller('users')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class UserController {
   constructor(private readonly userService: UserService) {}

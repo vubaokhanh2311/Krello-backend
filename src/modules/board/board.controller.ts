@@ -20,7 +20,7 @@ import {
 } from './dtos/board.dto';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
-@Controller('board')
+@Controller('boards')
 @UseGuards(JwtAuthGuard)
 export class BoardController {
   constructor(private readonly boardService: BoardService) {}

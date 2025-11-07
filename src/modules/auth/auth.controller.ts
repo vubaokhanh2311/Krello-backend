@@ -3,6 +3,8 @@ import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto } from './dtos/auth.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { JwtTokenService } from './jwt-token.service';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -22,7 +24,7 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Post('logout')
-  async logout(@Req() req) {
+  async logout(@Req() req: Request & { user: JwtPayload }) {
     return this.authService.logout(req.user);
   }
 
