@@ -16,12 +16,17 @@ import {
   UpdateLabelDto,
 } from './dtos/label.dto';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiSecurityAuth } from '../../common/decorators/swagger.decorator';
 
+@ApiTags('Label')
+@ApiSecurityAuth()
 @Controller('boards/:boardId/labels')
 export class LabelController {
   constructor(private readonly labelService: LabelService) {}
 
   @Get()
+  @ApiOperation({ summary: 'Get list of labels' })
   findAll(
     @Param('boardId') boardId: string,
     @Query() query: LabelQueryDto,
@@ -32,6 +37,7 @@ export class LabelController {
   }
 
   @Post()
+  @ApiOperation({ summary: 'Create new labels' })
   async create(
     @Req() req: Request & { user: JwtPayload },
     @Param('boardId') boardId: string,
@@ -42,6 +48,7 @@ export class LabelController {
   }
 
   @Put(':labelId')
+  @ApiOperation({ summary: 'Update labels' })
   async update(
     @Req() req: Request & { user: { uid: string } },
     @Param('boardId') boardId: string,
@@ -53,6 +60,7 @@ export class LabelController {
   }
 
   @Delete(':listId')
+  @ApiOperation({ summary: 'Delete labels' })
   async remove(
     @Req() req: Request & { user: JwtPayload },
     @Param('labelId') labelId: string,

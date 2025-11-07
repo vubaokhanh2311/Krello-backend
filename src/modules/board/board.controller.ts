@@ -19,13 +19,18 @@ import {
   BoardQueryDto,
 } from './dtos/board.dto';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiSecurityAuth } from '../../common/decorators/swagger.decorator';
 
+@ApiTags('Board')
+@ApiSecurityAuth()
 @Controller('boards')
 @UseGuards(JwtAuthGuard)
 export class BoardController {
   constructor(private readonly boardService: BoardService) {}
 
   @Get()
+  @ApiOperation({ summary: 'Get list of boards' })
   async findAll(
     @Req() req: { user: JwtPayload },
     @Query() query: BoardQueryDto,
@@ -34,6 +39,7 @@ export class BoardController {
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get boards by id' })
   async findOne(
     @Req() req: Request & { user: JwtPayload },
     @Param('id') id: string,
@@ -42,6 +48,7 @@ export class BoardController {
   }
 
   @Post()
+  @ApiOperation({ summary: 'Create new boards' })
   async create(
     @Req() req: Request & { user: JwtPayload },
     @Body() dto: CreateBoardDto,
@@ -50,6 +57,7 @@ export class BoardController {
   }
 
   @Put(':id')
+  @ApiOperation({ summary: 'Update boards' })
   async update(
     @Req() req: Request & { user: JwtPayload },
     @Param('id') id: string,
@@ -59,6 +67,7 @@ export class BoardController {
   }
 
   @Delete(':id')
+  @ApiOperation({ summary: 'Delete boards' })
   async remove(
     @Req() req: Request & { user: JwtPayload },
     @Param('id') id: string,
@@ -67,6 +76,7 @@ export class BoardController {
   }
 
   @Post(':id/members')
+  @ApiOperation({ summary: 'Invite a member to the board' })
   async inviteMember(
     @Param('id') boardId: string,
     @Body() dto: InviteMemberDto,
@@ -77,6 +87,9 @@ export class BoardController {
   }
 
   @Post('invite/confirm')
+  @ApiOperation({
+    summary: 'Confirm board invitation',
+  })
   async confirmInvite(
     @Query('token') token: string,
     @Req() req: { user: JwtPayload },
@@ -86,6 +99,9 @@ export class BoardController {
   }
 
   @Delete(':id/members/:userId')
+  @ApiOperation({
+    summary: 'Remove a member from the board',
+  })
   async removeMember(
     @Param('id') boardId: string,
     @Param('userId') userId: string,
@@ -96,6 +112,9 @@ export class BoardController {
   }
 
   @Get(':id/members')
+  @ApiOperation({
+    summary: 'Get list of board members',
+  })
   async getMembers(@Param('id') boardId: string) {
     return this.boardService.getMembers(boardId);
   }

@@ -26,7 +26,23 @@ import { CommentModule } from './modules/comment/comment.module';
   imports: [
     SharedModule,
     AuthModule,
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [
+        () => ({
+          app: {
+            name: process.env.APP_NAME,
+            globalPrefix: process.env.APP_GLOBAL_PREFIX || 'api',
+          },
+          swagger: {
+            enable: process.env.SWAGGER_ENABLE === 'true',
+            path: process.env.SWAGGER_PATH || 'api-docs',
+            serverUrl:
+              process.env.SWAGGER_SERVER_URL || 'http://localhost:3000',
+          },
+        }),
+      ],
+    }),
     UserModule,
     BoardModule,
     ListModule,
@@ -37,7 +53,20 @@ import { CommentModule } from './modules/comment/comment.module';
     AttachmentModule,
     CommentModule,
   ],
-  controllers: [AppController, UserController, ListController, CardController, LabelController, CardLabelController],
-  providers: [AppService, UserService, ListService, CardService, CardLabelService],
+  controllers: [
+    AppController,
+    UserController,
+    ListController,
+    CardController,
+    LabelController,
+    CardLabelController,
+  ],
+  providers: [
+    AppService,
+    UserService,
+    ListService,
+    CardService,
+    CardLabelService,
+  ],
 })
 export class AppModule {}
