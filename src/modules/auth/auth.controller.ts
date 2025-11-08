@@ -4,7 +4,11 @@ import { RegisterDto, LoginDto } from './dtos/auth.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { JwtTokenService } from './jwt-token.service';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { ApiTags, ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { ApiSecurityAuth } from '../../common/decorators/swagger.decorator';
 
+@ApiTags('auth')
+@ApiSecurityAuth()
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -13,22 +17,30 @@ export class AuthController {
   ) {}
 
   @Post('register')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: RegisterDto })
+  @ApiOperation({ summary: 'Register a new user' })
   async register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
   }
 
   @Post('login')
-  async login(@Body() LoginDto: LoginDto) {
-    return this.authService.login(LoginDto);
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: LoginDto })
+  @ApiOperation({ summary: 'Login with email and password' })
+  async login(@Body() loginDto: LoginDto) {
+    return this.authService.login(loginDto);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('logout')
+  @ApiOperation({ summary: 'Logout the current user' })
   async logout(@Req() req: Request & { user: JwtPayload }) {
     return this.authService.logout(req.user);
   }
 
   @Post('refresh-token')
+  @ApiOperation({ summary: 'Refresh access token using refresh token' })
   async refresh(@Body('refreshToken') refreshToken: string) {
     return this.jwtTokenService.refreshToken(refreshToken);
   }

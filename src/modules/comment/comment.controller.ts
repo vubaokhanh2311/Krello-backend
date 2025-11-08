@@ -18,13 +18,18 @@ import {
   UpdateCommentDto,
 } from './dtos/comment.dto';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiSecurityAuth } from '../../common/decorators/swagger.decorator';
 
+@ApiTags('Comment')
+@ApiSecurityAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('/cards/:cardId')
 export class CommentController {
   constructor(private readonly commentService: CommentService) {}
 
   @Get('comments')
+  @ApiOperation({ summary: 'Get list of comments' })
   async findAll(
     @Req() req: Request & { user: JwtPayload },
     @Param('cardId') cardId: string,
@@ -35,6 +40,7 @@ export class CommentController {
   }
 
   @Post('comments')
+  @ApiOperation({ summary: 'Create new comments' })
   async create(
     @Req() req: Request & { user: JwtPayload },
     @Param('cardId') cardId: string,
@@ -45,6 +51,7 @@ export class CommentController {
   }
 
   @Put('comments/:commentId')
+  @ApiOperation({ summary: 'Update comments' })
   async update(
     @Req() req: Request & { user: { uid: string } },
     @Param('commentId') commentId: string,
@@ -56,6 +63,7 @@ export class CommentController {
   }
 
   @Delete('comments/:commentId')
+  @ApiOperation({ summary: 'Delete comments' })
   async remove(
     @Req() req: Request & { user: JwtPayload },
     @Param('commentId') commentId: string,

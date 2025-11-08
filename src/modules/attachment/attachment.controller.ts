@@ -22,12 +22,19 @@ import {
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { multerAttachmentConfig } from '../../config/multer-attachment.config';
+import { ApiTags, ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
+
+import { ApiSecurityAuth } from '../../common/decorators/swagger.decorator';
+
+@ApiTags('Attachment')
+@ApiSecurityAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('/cards/:cardId')
 export class AttachmentController {
   constructor(private readonly attachmentService: AttachmentService) {}
 
   @Get('attachments')
+  @ApiOperation({ summary: 'Get list of attachments' })
   async findAll(
     @Req() req: Request & { user: JwtPayload },
     @Param('cardId') cardId: string,
@@ -38,6 +45,12 @@ export class AttachmentController {
   }
 
   @Post('attachments')
+  @ApiOperation({ summary: 'Create new attachments' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Upload a file with attachment details',
+    type: CreateAttachmentDto,
+  })
   @UseInterceptors(FileInterceptor('file', multerAttachmentConfig))
   async create(
     @Req() req: Request & { user: JwtPayload },
@@ -56,6 +69,7 @@ export class AttachmentController {
   }
 
   @Put('attachments/:attachmentId')
+  @ApiOperation({ summary: 'Update attachments' })
   async update(
     @Req() req: Request & { user: { uid: string } },
     @Param('attachmentId') attachmentId: string,
@@ -67,6 +81,7 @@ export class AttachmentController {
   }
 
   @Delete('attachments/:attachmentId')
+  @ApiOperation({ summary: 'Delete attachments' })
   async remove(
     @Req() req: Request & { user: JwtPayload },
     @Param('attachmentId') attachmentId: string,

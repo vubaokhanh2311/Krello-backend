@@ -23,6 +23,7 @@ import {
   UpdateUserDto,
   CreateUserDto,
   UserQueryDto,
+  UpdateAvatarDto,
 } from './dtos/user.dto';
 
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -31,26 +32,39 @@ import sharp from 'sharp';
 import { join } from 'path';
 import * as fs from 'fs';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { ApiTags, ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { ApiSecurityAuth } from '../../common/decorators/swagger.decorator';
+
+@ApiTags('users')
+@ApiSecurityAuth()
 @Controller('users')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class UserController {
   constructor(private readonly userService: UserService) {}
   @Get()
+  @ApiOperation({ summary: 'Get list of users' })
   @Permissions(PermissionEnum.USER_VIEW)
   async findAll(@Query() query: UserQueryDto) {
     return this.userService.findAll(query);
   }
   @Get(':id')
+  @ApiOperation({ summary: 'Get user by id' })
   async findOne(@Param('id') id: string) {
     return this.userService.findOne(id);
   }
 
   @Post()
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: CreateUserDto })
+  @ApiOperation({ summary: 'Create new user' })
   async create(@Body() dto: CreateUserDto) {
     return this.userService.create(dto);
   }
 
   @Put(':id')
+  @ApiOperation({ summary: 'Update user' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: UpdateUserDto })
   @UseInterceptors(FileInterceptor('avatar', multerConfig))
   async update(
     @Param('id') id: string,
@@ -79,16 +93,25 @@ export class UserController {
   }
 
   @Delete(':id')
+  @ApiOperation({ summary: 'Delete user' })
   async remove(@Param('id') id: string) {
     return this.userService.remove(id);
   }
 
   @Get('profile')
+  @ApiOperation({
+    summary: 'Get current user profile',
+  })
   async getProfile(@Req() req: Request & { user: JwtPayload }) {
     return this.userService.getProfile(req.user.uid);
   }
 
   @Put('profile')
+  @ApiOperation({
+    summary: 'Update profile',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: UpdateProfileDto })
   async updateProfile(
     @Req() req: Request & { user: JwtPayload },
     @Body() dto: UpdateProfileDto,
@@ -97,6 +120,11 @@ export class UserController {
   }
 
   @Patch('avatar')
+  @ApiOperation({
+    summary: 'Update avatar',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: UpdateAvatarDto })
   @UseInterceptors(FileInterceptor('file', multerConfig))
   async updateAvatar(
     @UploadedFile() file: Express.Multer.File,

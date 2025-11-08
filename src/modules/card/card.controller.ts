@@ -14,13 +14,18 @@ import { CardService } from './card.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CardQueryDto, CreateCardDto, UpdateCardDto } from './dtos/card.dto';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiSecurityAuth } from '../../common/decorators/swagger.decorator';
 
+@ApiTags('Card')
+@ApiSecurityAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('lists/:listId')
 export class CardController {
   constructor(private readonly cardService: CardService) {}
 
   @Get('cards')
+  @ApiOperation({ summary: 'Get list of cards' })
   async findAll(
     @Req() req: Request & { user: JwtPayload },
     @Param('listId') listId: string,
@@ -30,6 +35,7 @@ export class CardController {
   }
 
   @Post('cards')
+  @ApiOperation({ summary: 'Create new cards' })
   async create(
     @Req() req: Request & { user: JwtPayload },
     @Param('listId') listId: string,
@@ -40,6 +46,7 @@ export class CardController {
   }
 
   @Put('cards/:cardId')
+  @ApiOperation({ summary: 'Update cards' })
   async update(
     @Req() req: Request & { user: { uid: string } },
     @Param('listId') listId: string,
@@ -51,6 +58,7 @@ export class CardController {
   }
 
   @Delete('cards/:cardId')
+  @ApiOperation({ summary: 'Delete cards' })
   async remove(
     @Req() req: Request & { user: JwtPayload },
     @Param('cardId') cardId: string,
