@@ -23,6 +23,7 @@ import {
   UpdateUserDto,
   CreateUserDto,
   UserQueryDto,
+  UpdateAvatarDto,
 } from './dtos/user.dto';
 
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -31,7 +32,7 @@ import sharp from 'sharp';
 import { join } from 'path';
 import * as fs from 'fs';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { ApiSecurityAuth } from '../../common/decorators/swagger.decorator';
 
 @ApiTags('users')
@@ -53,6 +54,8 @@ export class UserController {
   }
 
   @Post()
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: CreateUserDto })
   @ApiOperation({ summary: 'Create new user' })
   async create(@Body() dto: CreateUserDto) {
     return this.userService.create(dto);
@@ -60,6 +63,8 @@ export class UserController {
 
   @Put(':id')
   @ApiOperation({ summary: 'Update user' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: UpdateUserDto })
   @UseInterceptors(FileInterceptor('avatar', multerConfig))
   async update(
     @Param('id') id: string,
@@ -105,6 +110,8 @@ export class UserController {
   @ApiOperation({
     summary: 'Update profile',
   })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: UpdateProfileDto })
   async updateProfile(
     @Req() req: Request & { user: JwtPayload },
     @Body() dto: UpdateProfileDto,
@@ -116,6 +123,8 @@ export class UserController {
   @ApiOperation({
     summary: 'Update avatar',
   })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: UpdateAvatarDto })
   @UseInterceptors(FileInterceptor('file', multerConfig))
   async updateAvatar(
     @UploadedFile() file: Express.Multer.File,

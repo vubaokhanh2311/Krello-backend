@@ -22,7 +22,8 @@ import {
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { multerAttachmentConfig } from '../../config/multer-attachment.config';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
+
 import { ApiSecurityAuth } from '../../common/decorators/swagger.decorator';
 
 @ApiTags('Attachment')
@@ -45,6 +46,11 @@ export class AttachmentController {
 
   @Post('attachments')
   @ApiOperation({ summary: 'Create new attachments' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Upload a file with attachment details',
+    type: CreateAttachmentDto,
+  })
   @UseInterceptors(FileInterceptor('file', multerAttachmentConfig))
   async create(
     @Req() req: Request & { user: JwtPayload },

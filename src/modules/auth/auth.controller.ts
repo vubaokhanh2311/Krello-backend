@@ -4,7 +4,7 @@ import { RegisterDto, LoginDto } from './dtos/auth.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { JwtTokenService } from './jwt-token.service';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { ApiSecurityAuth } from '../../common/decorators/swagger.decorator';
 
 @ApiTags('auth')
@@ -17,12 +17,16 @@ export class AuthController {
   ) {}
 
   @Post('register')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: RegisterDto })
   @ApiOperation({ summary: 'Register a new user' })
   async register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
   }
 
   @Post('login')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: LoginDto })
   @ApiOperation({ summary: 'Login with email and password' })
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);

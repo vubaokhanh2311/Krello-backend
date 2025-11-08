@@ -17,7 +17,7 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ApiSecurityAuth } from '../../common/decorators/swagger.decorator';
 
-@ApiTags('Label')
+@ApiTags('List')
 @ApiSecurityAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('boards/:boardId')
