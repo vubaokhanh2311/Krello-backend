@@ -22,6 +22,11 @@ import { CardLabelController } from './modules/card-label/card-label.controller'
 import { CardLabelModule } from './modules/card-label/card-label.module';
 import { AttachmentModule } from './modules/attachment/attachment.module';
 import { CommentModule } from './modules/comment/comment.module';
+import { UnsplashController } from './modules/unsplash/unsplash.controller';
+import { UnsplashService } from './modules/unsplash/unsplash.service';
+import { UnsplashModule } from './modules/unsplash/unsplash.module';
+import { HttpModule } from '@nestjs/axios';
+
 @Module({
   imports: [
     SharedModule,
@@ -52,6 +57,8 @@ import { CommentModule } from './modules/comment/comment.module';
     CardLabelModule,
     AttachmentModule,
     CommentModule,
+    UnsplashModule,
+    HttpModule,
   ],
   controllers: [
     AppController,
@@ -60,6 +67,7 @@ import { CommentModule } from './modules/comment/comment.module';
     CardController,
     LabelController,
     CardLabelController,
+    UnsplashController,
   ],
   providers: [
     AppService,
@@ -67,6 +75,7 @@ import { CommentModule } from './modules/comment/comment.module';
     ListService,
     CardService,
     CardLabelService,
+    UnsplashService,
   ],
 })
 export class AppModule {}
