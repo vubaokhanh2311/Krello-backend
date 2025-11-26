@@ -47,56 +47,6 @@ export class UserController {
   async findAll(@Query() query: UserQueryDto) {
     return this.userService.findAll(query);
   }
-  @Get(':id')
-  @ApiOperation({ summary: 'Get user by id' })
-  async findOne(@Param('id') id: string) {
-    return this.userService.findOne(id);
-  }
-
-  @Post()
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({ type: CreateUserDto })
-  @ApiOperation({ summary: 'Create new user' })
-  async create(@Body() dto: CreateUserDto) {
-    return this.userService.create(dto);
-  }
-
-  @Put(':id')
-  @ApiOperation({ summary: 'Update user' })
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({ type: UpdateUserDto })
-  @UseInterceptors(FileInterceptor('avatar', multerConfig))
-  async update(
-    @Param('id') id: string,
-    @Body() dto: UpdateUserDto,
-    @UploadedFile() file?: Express.Multer.File,
-  ) {
-    let avatarUrl: string | undefined;
-
-    if (file) {
-      const uploadDir = join(process.cwd(), 'public', 'uploads', 'avatars');
-      const originalPath = join(uploadDir, file.filename);
-      const tempPath = join(uploadDir, `temp-${file.filename}`);
-
-      await sharp(originalPath).resize(256, 256).toFile(tempPath);
-
-      fs.unlinkSync(originalPath);
-      fs.renameSync(tempPath, originalPath);
-
-      avatarUrl = `/uploads/avatars/${file.filename}`;
-    }
-
-    return this.userService.update(id, {
-      ...dto,
-      ...(avatarUrl && { avatarUrl }),
-    });
-  }
-
-  @Delete(':id')
-  @ApiOperation({ summary: 'Delete user' })
-  async remove(@Param('id') id: string) {
-    return this.userService.remove(id);
-  }
 
   @Get('profile')
   @ApiOperation({
@@ -146,5 +96,56 @@ export class UserController {
     await this.userService.updateAvatar(userId, { avatarUrl });
 
     return { avatarUrl };
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get user by id' })
+  async findOne(@Param('id') id: string) {
+    return this.userService.findOne(id);
+  }
+
+  @Post()
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: CreateUserDto })
+  @ApiOperation({ summary: 'Create new user' })
+  async create(@Body() dto: CreateUserDto) {
+    return this.userService.create(dto);
+  }
+
+  @Put(':id')
+  @ApiOperation({ summary: 'Update user' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: UpdateUserDto })
+  @UseInterceptors(FileInterceptor('avatar', multerConfig))
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateUserDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    let avatarUrl: string | undefined;
+
+    if (file) {
+      const uploadDir = join(process.cwd(), 'public', 'uploads', 'avatars');
+      const originalPath = join(uploadDir, file.filename);
+      const tempPath = join(uploadDir, `temp-${file.filename}`);
+
+      await sharp(originalPath).resize(256, 256).toFile(tempPath);
+
+      fs.unlinkSync(originalPath);
+      fs.renameSync(tempPath, originalPath);
+
+      avatarUrl = `/uploads/avatars/${file.filename}`;
+    }
+
+    return this.userService.update(id, {
+      ...dto,
+      ...(avatarUrl && { avatarUrl }),
+    });
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete user' })
+  async remove(@Param('id') id: string) {
+    return this.userService.remove(id);
   }
 }

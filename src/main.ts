@@ -7,6 +7,10 @@ import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  app.enableCors({
+    origin: process.env.FRONTEND_URL,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+  });
   const configService = app.get(ConfigService);
   app.setGlobalPrefix('api');
   const swaggerLogger = setupSwagger(app, configService);

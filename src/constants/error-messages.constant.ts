@@ -48,6 +48,9 @@ export const ERROR_MESSAGES = {
   COMMENT: {
     NOT_FOUND: 'Comment not found.',
   },
+  UNSPLASH: {
+    FAIL: 'Failed to fetch photos from Unsplash',
+  },
 
   INVITATION: {
     NOT_FOUND: 'Invitation not found',
