@@ -94,3 +94,17 @@ export class InviteMemberDto {
   @IsEnum(RoleType)
   role?: RoleType = RoleType.viewer;
 }
+
+export class ConfirmInviteDto {
+  token: string;
+}
+
+export class RoleDto {
+  @ApiProperty({
+    description: 'Role of the member',
+    enum: RoleType,
+    example: RoleType.viewer,
+  })
+  @IsEnum(RoleType, { message: 'Role must be one of owner, editor, viewer' })
+  role: RoleType;
+}

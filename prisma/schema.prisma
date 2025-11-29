@@ -98,6 +98,8 @@ model BoardMember {
 
   userId String
   user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([boardId, userId])
 }
 
 enum RoleType {

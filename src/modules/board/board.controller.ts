@@ -9,6 +9,7 @@ import {
   Req,
   UseGuards,
   Query,
+  Patch,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { BoardService } from './board.service';
@@ -17,6 +18,8 @@ import {
   UpdateBoardDto,
   InviteMemberDto,
   BoardQueryDto,
+  ConfirmInviteDto,
+  RoleDto,
 } from './dtos/board.dto';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
@@ -36,6 +39,13 @@ export class BoardController {
     @Query() query: BoardQueryDto,
   ) {
     return this.boardService.findAll(req.user.uid, query);
+  }
+  @Get(':id/members')
+  @ApiOperation({
+    summary: 'Get list of board members',
+  })
+  async getMembers(@Param('id') boardId: string) {
+    return this.boardService.getMembers(boardId);
   }
 
   @Get(':id')
@@ -91,11 +101,26 @@ export class BoardController {
     summary: 'Confirm board invitation',
   })
   async confirmInvite(
-    @Query('token') token: string,
+    @Body() body: ConfirmInviteDto,
     @Req() req: { user: JwtPayload },
   ) {
     const userId = req.user.uid;
-    return this.boardService.confirmInvite(token, userId);
+    return this.boardService.confirmInvite(body.token, userId);
+  }
+
+  @Patch(':id/members/:userId/role')
+  async updateMemberRole(
+    @Param('id') boardId: string,
+    @Param('userId') userId: string,
+    @Body() body: RoleDto,
+    @Req() req: { user: JwtPayload },
+  ) {
+    return this.boardService.updateMemberRole(
+      boardId,
+      userId,
+      body.role,
+      req.user.uid,
+    );
   }
 
   @Delete(':id/members/:userId')
@@ -109,13 +134,5 @@ export class BoardController {
   ) {
     const ownerId = req.user.uid;
     return this.boardService.removeMember(boardId, userId, ownerId);
-  }
-
-  @Get(':id/members')
-  @ApiOperation({
-    summary: 'Get list of board members',
-  })
-  async getMembers(@Param('id') boardId: string) {
-    return this.boardService.getMembers(boardId);
   }
 }

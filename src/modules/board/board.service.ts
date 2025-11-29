@@ -26,6 +26,7 @@ import {
   parseSelectFields,
   buildMeta,
 } from '../../common/utils/index';
+import { RoleType } from '@prisma/client';
 @Injectable()
 export class BoardService {
   constructor(
@@ -189,6 +190,7 @@ export class BoardService {
     const invite = await this.prisma.boardInvitation.findUnique({
       where: { token },
     });
+
     if (!invite)
       throw new NotFoundException(ERROR_MESSAGES.INVITATION.NOT_FOUND);
     if (invite.status !== INVITESTATUS.PENDING)
@@ -200,20 +202,35 @@ export class BoardService {
     if (!user || user.email !== invite.email)
       throw new ForbiddenException(ERROR_MESSAGES.INVITATION.EMAIL_MISMATCH);
 
-    await this.prisma.boardMember.create({
-      data: {
-        boardId: invite.boardId,
-        userId,
-        role: invite.role,
+    // Kiểm tra xem user đã là member của board chưa
+    const existingMember = await this.prisma.boardMember.findUnique({
+      where: {
+        boardId_userId: {
+          boardId: invite.boardId,
+          userId: user.id,
+        },
       },
     });
+
+    if (!existingMember) {
+      await this.prisma.boardMember.create({
+        data: {
+          boardId: invite.boardId,
+          userId,
+          role: invite.role,
+        },
+      });
+    }
 
     await this.prisma.boardInvitation.update({
       where: { id: invite.id },
       data: { status: INVITESTATUS.ACCEPTED },
     });
 
-    return { message: SUCCESS_MESSAGES.COMMON.SUCCESS };
+    return {
+      message: SUCCESS_MESSAGES.COMMON.SUCCESS,
+      boardId: invite.boardId,
+    };
   }
 
   async removeMember(boardId: string, userId: string, ownerId: string) {
@@ -241,10 +258,40 @@ export class BoardService {
     const members = await this.prisma.boardMember.findMany({
       where: { boardId },
       include: {
-        user: { select: { id: true, name: true, email: true } },
+        user: {
+          select: { id: true, name: true, email: true, avatarUrl: true },
+        },
       },
     });
 
     return members;
+  }
+
+  async updateMemberRole(
+    boardId: string,
+    userId: string,
+    role: RoleType,
+    ownerId: string,
+  ) {
+    const board = await this.prisma.board.findUnique({
+      where: { id: boardId },
+    });
+    if (!board) throw new NotFoundException(ERROR_MESSAGES.BOARD.NOT_FOUND);
+
+    if (board.ownerId !== ownerId) {
+      throw new ForbiddenException(ERROR_MESSAGES.BOARD.OWNER_NOT_BOARD);
+    }
+
+    const member = await this.prisma.boardMember.findFirst({
+      where: { boardId, userId },
+    });
+    if (!member) throw new NotFoundException(ERROR_MESSAGES.BOARD.NOT_MEMBER);
+
+    await this.prisma.boardMember.update({
+      where: { id: member.id },
+      data: { role },
+    });
+
+    return { message: SUCCESS_MESSAGES.BOARD.MEMBER_ROLE_UPDATED };
   }
 }
