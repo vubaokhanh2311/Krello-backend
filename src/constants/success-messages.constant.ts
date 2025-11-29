@@ -17,5 +17,6 @@ export const SUCCESS_MESSAGES = {
     SUCCESS_MEMBER: 'Member invited successfully',
     MEMBER_REMOVED: 'Member removed successfully',
     EMAIL_SENT: 'Invitation email sent successfully',
+    MEMBER_ROLE_UPDATED: 'Role updated successfully',
   },
 } as const;
