@@ -294,4 +294,19 @@ export class BoardService {
 
     return { message: SUCCESS_MESSAGES.BOARD.MEMBER_ROLE_UPDATED };
   }
+
+  async getBoardsJoinedByUser(userId: string) {
+    return this.prisma.board.findMany({
+      where: {
+        ownerId: { not: userId },
+        members: {
+          some: { userId },
+        },
+      },
+      include: {
+        owner: true,
+        members: true,
+      },
+    });
+  }
 }

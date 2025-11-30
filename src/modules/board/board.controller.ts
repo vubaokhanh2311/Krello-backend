@@ -40,6 +40,13 @@ export class BoardController {
   ) {
     return this.boardService.findAll(req.user.uid, query);
   }
+
+  @Get('joined')
+  async getJoinedBoards(@Req() req: { user: JwtPayload }) {
+    const userId = req.user.uid;
+    return this.boardService.getBoardsJoinedByUser(userId);
+  }
+
   @Get(':id/members')
   @ApiOperation({
     summary: 'Get list of board members',
