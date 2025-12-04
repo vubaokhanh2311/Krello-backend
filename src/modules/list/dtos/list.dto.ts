@@ -10,14 +10,6 @@ export class CreateListDto {
   @IsNotEmpty()
   @IsString()
   title: string;
-
-  @ApiPropertyOptional({
-    description: 'The position of the list',
-    example: 1,
-  })
-  @IsOptional()
-  @IsNumber()
-  position: number;
 }
 
 export class UpdateListDto {
@@ -28,14 +20,6 @@ export class UpdateListDto {
   @IsNotEmpty()
   @IsString()
   title: string;
-
-  @ApiPropertyOptional({
-    description: 'The position of the list',
-    example: 1,
-  })
-  @IsOptional()
-  @IsNumber()
-  position: number;
 }
 
 export class ListQueryDto extends PaginationDto {

@@ -3,6 +3,7 @@ import {
   IsString,
   IsNumber,
   IsDate,
+  IsArray,
   IsNotEmpty,
 } from 'class-validator';
 import { PaginationDto } from '../../../common/dtos/pagination.dto';
@@ -51,7 +52,6 @@ export class CreateCardDto {
   @IsString()
   createdBy?: string;
 }
-
 export class UpdateCardDto {
   @ApiProperty({
     description: 'Title of the card',
@@ -93,6 +93,24 @@ export class UpdateCardDto {
   @IsOptional()
   @IsString()
   createdBy?: string;
+
+  @ApiPropertyOptional({
+    description: 'List ID to move the card to',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsOptional()
+  @IsString()
+  listId?: string;
+
+  // 🔥 ADD THIS — REQUIRED FOR ORDERING
+  @ApiPropertyOptional({
+    description: 'New order of card IDs inside the list',
+    example: ['cardA', 'cardB', 'cardC'],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  taskOrder?: string[];
 }
 
 export class CardQueryDto extends PaginationDto {

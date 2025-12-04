@@ -29,6 +29,7 @@ export const ERROR_MESSAGES = {
     NOT_FOUND: 'Card not found.',
     ACCESS_DENIED: 'You do not have permission to access this card.',
     MEMBER_ALREADY_EXISTS: 'You do not have permission to access this card.',
+    LACK: 'Missing taskOrder',
   },
   CARD_MEMBER: {
     NOT_FOUND: 'CardMember not found.',
