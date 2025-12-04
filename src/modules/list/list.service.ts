@@ -51,10 +51,17 @@ export class ListService {
   async create(userId: string, boardId: string, dto: CreateListDto) {
     await checkBoardAccess(this.prisma, boardId, userId, [ROLETYPE.EDITOR]);
 
+    const listCount = await this.prisma.list.count({
+      where: { boardId },
+    });
+
+    const newPosition = listCount;
+
     return this.prisma.list.create({
       data: {
-        ...dto,
+        title: dto.title,
         boardId,
+        position: newPosition,
       },
       select: {
         id: true,
@@ -76,7 +83,7 @@ export class ListService {
 
     return this.prisma.list.update({
       where: { id: listId },
-      data: { ...dto },
+      data: { title: dto.title },
       select: {
         id: true,
         title: true,

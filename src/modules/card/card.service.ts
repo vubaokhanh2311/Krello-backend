@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { CardQueryDto, CreateCardDto, UpdateCardDto } from './dtos/card.dto';
 import {
@@ -22,9 +26,7 @@ export class CardService {
 
     const list = await this.prisma.list.findUnique({
       where: { id: listId },
-      select: {
-        board: { select: { id: true } },
-      },
+      select: { board: { select: { id: true } } },
     });
 
     if (!list) {
@@ -34,35 +36,56 @@ export class CardService {
     await checkBoardAccess(this.prisma, list.board.id, userId);
 
     const where: any = { listId };
-
-    if (query.title) {
+    if (query.title)
       where.title = { contains: query.title, mode: 'insensitive' };
-    }
-    if (query.dueDate) {
-      where.dueDate = {
-        equals: new Date(query.dueDate),
-      };
-    }
+    if (query.dueDate) where.dueDate = { equals: new Date(query.dueDate) };
+    if (query.position) where.position = { equals: Number(query.position) };
 
-    if (query.position) {
-      where.position = { equals: Number(query.position) };
-    }
+    const orderBy = query.order ? parseOrder(query.order) : { position: 'asc' };
 
-    const orderBy = parseOrder(query.order);
-    const select = parseSelectFields(query.fields, {
+    const selectFields = parseSelectFields(query.fields, {
       id: true,
       title: true,
       description: true,
       position: true,
       dueDate: true,
       createdBy: true,
-      members: true,
       createdAt: true,
       updatedAt: true,
     });
 
     const [data, total] = await Promise.all([
-      this.prisma.card.findMany({ where, skip, take, orderBy, select }),
+      this.prisma.card.findMany({
+        where,
+        skip,
+        take,
+        orderBy,
+        select: {
+          ...selectFields,
+          members: {
+            select: {
+              id: true,
+              joinedAt: true,
+              userId: true,
+              user: { select: { id: true, name: true, avatarUrl: true } },
+            },
+          },
+          comments: {
+            select: {
+              id: true,
+              content: true,
+              createdAt: true,
+
+              user: { select: { id: true, name: true, avatarUrl: true } },
+            },
+          },
+          labels: {
+            select: {
+              label: { select: { id: true, name: true, color: true } },
+            },
+          },
+        },
+      }),
       this.prisma.card.count({ where }),
     ]);
 
@@ -77,6 +100,10 @@ export class CardService {
       where: { id: listId },
       select: {
         board: { select: { id: true } },
+        cards: {
+          orderBy: { position: 'asc' },
+          select: { id: true, position: true },
+        },
       },
     });
 
@@ -88,11 +115,29 @@ export class CardService {
       ROLETYPE.EDITOR,
     ]);
 
-    return this.prisma.card.create({
+    const cards = list.cards;
+    const index = dto.position ?? cards.length;
+
+    let newPos: number;
+
+    if (cards.length === 0) {
+      newPos = 1024;
+    } else if (index <= 0) {
+      newPos = cards[0].position / 2;
+    } else if (index >= cards.length) {
+      newPos = cards[cards.length - 1].position + 1024;
+    } else {
+      const prev = cards[index - 1].position;
+      const next = cards[index].position;
+      newPos = (prev + next) / 2;
+    }
+
+    const newCard = await this.prisma.card.create({
       data: {
         ...dto,
         listId,
         createdBy: userId,
+        position: newPos,
       },
       select: {
         id: true,
@@ -100,12 +145,20 @@ export class CardService {
         description: true,
         position: true,
         dueDate: true,
-        createdBy: true,
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
+          },
+        },
         members: true,
         createdAt: true,
         updatedAt: true,
       },
     });
+
+    return newCard;
   }
 
   async update(
@@ -114,11 +167,11 @@ export class CardService {
     cardId: string,
     dto: UpdateCardDto,
   ) {
+    const targetListId = dto.listId || listId;
+
     const list = await this.prisma.list.findUnique({
-      where: { id: listId },
-      select: {
-        board: { select: { id: true } },
-      },
+      where: { id: targetListId },
+      select: { board: { select: { id: true } } },
     });
 
     if (!list) {
@@ -129,20 +182,41 @@ export class CardService {
       ROLETYPE.EDITOR,
     ]);
 
-    return this.prisma.card.update({
+    if (!dto.taskOrder || !Array.isArray(dto.taskOrder)) {
+      throw new BadRequestException(ERROR_MESSAGES.CARD.LACK);
+    }
+
+    const taskOrder = dto.taskOrder;
+
+    const reorderOps = taskOrder.map((id, index) =>
+      this.prisma.card.update({
+        where: { id },
+        data: {
+          position: index * 1024,
+        },
+      }),
+    );
+
+    const updateCardData: any = {};
+
+    if (dto.title !== undefined) updateCardData.title = dto.title;
+    if (dto.description !== undefined)
+      updateCardData.description = dto.description;
+    if (dto.dueDate !== undefined) updateCardData.dueDate = dto.dueDate;
+
+    if (dto.listId) {
+      updateCardData.list = { connect: { id: dto.listId } };
+    }
+
+    const updateSelectedCard = this.prisma.card.update({
       where: { id: cardId },
-      data: { ...dto },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        position: true,
-        dueDate: true,
-        createdBy: true,
-        members: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      data: updateCardData,
+    });
+
+    await this.prisma.$transaction([...reorderOps, updateSelectedCard]);
+
+    return this.prisma.card.findUnique({
+      where: { id: cardId },
     });
   }
 
