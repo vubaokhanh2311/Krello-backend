@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { CardQueryDto, CreateCardDto, UpdateCardDto } from './dtos/card.dto';
 import {
@@ -182,21 +178,6 @@ export class CardService {
       ROLETYPE.EDITOR,
     ]);
 
-    if (!dto.taskOrder || !Array.isArray(dto.taskOrder)) {
-      throw new BadRequestException(ERROR_MESSAGES.CARD.LACK);
-    }
-
-    const taskOrder = dto.taskOrder;
-
-    const reorderOps = taskOrder.map((id, index) =>
-      this.prisma.card.update({
-        where: { id },
-        data: {
-          position: index * 1024,
-        },
-      }),
-    );
-
     const updateCardData: any = {};
 
     if (dto.title !== undefined) updateCardData.title = dto.title;
@@ -208,16 +189,29 @@ export class CardService {
       updateCardData.list = { connect: { id: dto.listId } };
     }
 
+    const transactionOps: any[] = [];
+
+    if (dto.taskOrder && Array.isArray(dto.taskOrder)) {
+      const reorderOps = dto.taskOrder.map((id, index) =>
+        this.prisma.card.update({
+          where: { id },
+          data: { position: index * 1024 },
+        }),
+      );
+
+      transactionOps.push(...reorderOps);
+    }
+
     const updateSelectedCard = this.prisma.card.update({
       where: { id: cardId },
       data: updateCardData,
     });
 
-    await this.prisma.$transaction([...reorderOps, updateSelectedCard]);
+    transactionOps.push(updateSelectedCard);
 
-    return this.prisma.card.findUnique({
-      where: { id: cardId },
-    });
+    await this.prisma.$transaction(transactionOps);
+
+    return this.prisma.card.findUnique({ where: { id: cardId } });
   }
 
   async remove(userId: string, cardId: string) {
