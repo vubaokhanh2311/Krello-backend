@@ -25,8 +25,10 @@ import {
   parseOrder,
   parseSelectFields,
   buildMeta,
+  checkBoardAccess,
 } from '../../common/utils/index';
 import { RoleType } from '@prisma/client';
+
 @Injectable()
 export class BoardService {
   constructor(
@@ -88,8 +90,8 @@ export class BoardService {
     });
 
     if (!board) throw new NotFoundException(ERROR_MESSAGES.BOARD.NOT_FOUND);
-    if (board.ownerId !== userId)
-      throw new ForbiddenException(ERROR_MESSAGES.AUTH.ACCESS_DENIED);
+
+    await checkBoardAccess(this.prisma, board.id, userId);
 
     return board;
   }

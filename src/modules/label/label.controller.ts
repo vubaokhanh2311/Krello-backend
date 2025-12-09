@@ -8,6 +8,7 @@ import {
   Body,
   Put,
   Delete,
+  UseGuards,
 } from '@nestjs/common';
 import { LabelService } from './label.service';
 import {
@@ -18,8 +19,10 @@ import {
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ApiSecurityAuth } from '../../common/decorators/swagger.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('Label')
+@UseGuards(JwtAuthGuard)
 @ApiSecurityAuth()
 @Controller('boards/:boardId/labels')
 export class LabelController {
