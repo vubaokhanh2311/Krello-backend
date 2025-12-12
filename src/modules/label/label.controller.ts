@@ -62,7 +62,7 @@ export class LabelController {
     return this.labelService.update(userId, boardId, labelId, dto);
   }
 
-  @Delete(':listId')
+  @Delete(':labelId')
   @ApiOperation({ summary: 'Delete labels' })
   async remove(
     @Req() req: Request & { user: JwtPayload },
