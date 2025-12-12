@@ -235,6 +235,14 @@ export class CardService {
 
     await checkBoardAccess(this.prisma, boardId, userId, [ROLETYPE.EDITOR]);
 
+    await this.prisma.cardLabel.deleteMany({
+      where: { cardId },
+    });
+
+    await this.prisma.cardMember.deleteMany({
+      where: { cardId },
+    });
+
     await this.prisma.card.delete({
       where: { id: cardId },
     });

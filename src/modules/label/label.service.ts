@@ -109,11 +109,18 @@ export class LabelService {
     if (!label) {
       throw new NotFoundException(ERROR_MESSAGES.LABEL.NOT_FOUND);
     }
+
     await checkBoardAccess(this.prisma, label.boardId, userId, [
       ROLETYPE.EDITOR,
     ]);
 
-    await this.prisma.label.delete({ where: { id: labelId } });
+    await this.prisma.cardLabel.deleteMany({
+      where: { labelId },
+    });
+
+    await this.prisma.label.delete({
+      where: { id: labelId },
+    });
 
     return { message: SUCCESS_MESSAGES.COMMON.SUCCESS };
   }
