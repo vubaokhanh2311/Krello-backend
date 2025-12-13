@@ -4,15 +4,46 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { setupSwagger } from '../src/utils/swagger';
 import { ConfigService } from '@nestjs/config';
+import { ValidationPipe } from '@nestjs/common';
+import helmet from 'helmet';
+import { RequestHandler } from 'express';
+import { IAppConfig } from './config/config.types.ts';
+
+type HelmetOptions = {
+  crossOriginResourcePolicy?: { policy?: string };
+};
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const configService = app.get(ConfigService);
+
+  const appConfig = configService.get<IAppConfig>('app');
+  const globalPrefix = appConfig?.globalPrefix || 'api';
+
+  app.setGlobalPrefix(globalPrefix);
+
   app.enableCors({
-    origin: process.env.FRONTEND_URL,
+    origin: process.env.FRONTEND_URL?.split(',').map((o) => o.trim()) || '*',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
   });
-  const configService = app.get(ConfigService);
-  app.setGlobalPrefix('api');
+
+  const helmetMiddleware: RequestHandler = (
+    helmet as unknown as (options?: HelmetOptions) => RequestHandler
+  )({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  });
+
+  app.use(helmetMiddleware);
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+      transformOptions: { enableImplicitConversion: true },
+    }),
+  );
+
   const swaggerLogger = setupSwagger(app, configService);
   app.useStaticAssets(join(process.cwd(), 'public', 'uploads'), {
     prefix: '/uploads/',
@@ -21,4 +52,4 @@ async function bootstrap() {
   await app.listen(process.env.PORT ?? 3000);
   if (swaggerLogger) swaggerLogger();
 }
-bootstrap();
+void bootstrap();
