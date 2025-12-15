@@ -57,9 +57,10 @@ export class UpdateCardDto {
     description: 'Title of the card',
     example: 'Finish NestJS project',
   })
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
-  title: string;
+  title?: string;
 
   @ApiPropertyOptional({
     description: 'Description of the card',
@@ -102,7 +103,6 @@ export class UpdateCardDto {
   @IsString()
   listId?: string;
 
-  // 🔥 ADD THIS — REQUIRED FOR ORDERING
   @ApiPropertyOptional({
     description: 'New order of card IDs inside the list',
     example: ['cardA', 'cardB', 'cardC'],

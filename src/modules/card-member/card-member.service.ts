@@ -63,10 +63,11 @@ export class CardMemberService {
     });
   }
 
-  async remove(userId: string, cardMemberId: string) {
-    const cardMember = await this.prisma.cardMember.findUnique({
-      where: { id: cardMemberId },
+  async remove(userId: string, memberUserId: string, cardId: string) {
+    const cardMember = await this.prisma.cardMember.findFirst({
+      where: { userId: memberUserId, cardId },
       select: {
+        id: true,
         card: {
           select: {
             list: {
@@ -84,10 +85,11 @@ export class CardMemberService {
     }
 
     const boardId = cardMember.card.list.boardId;
+
     await checkBoardAccess(this.prisma, boardId, userId, [], true);
 
     await this.prisma.cardMember.delete({
-      where: { id: cardMemberId },
+      where: { id: cardMember.id },
     });
 
     return { message: SUCCESS_MESSAGES.COMMON.SUCCESS };
