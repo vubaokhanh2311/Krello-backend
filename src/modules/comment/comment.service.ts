@@ -66,6 +66,7 @@ export class CommentService {
           id: true,
           name: true,
           email: true,
+          avatarUrl: true,
         },
       },
       card: {
@@ -124,6 +125,7 @@ export class CommentService {
             id: true,
             name: true,
             email: true,
+            avatarUrl: true,
           },
         },
         card: {
@@ -171,6 +173,7 @@ export class CommentService {
           select: {
             id: true,
             name: true,
+            avatarUrl: true,
           },
         },
       },
@@ -197,6 +200,7 @@ export class CommentService {
             id: true,
             name: true,
             email: true,
+            avatarUrl: true,
           },
         },
         card: {

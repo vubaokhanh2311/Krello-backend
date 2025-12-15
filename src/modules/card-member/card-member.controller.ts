@@ -36,8 +36,9 @@ export class CardMemberController {
   @ApiOperation({ summary: 'Delete members with card' })
   async remove(
     @Req() req: Request & { user: JwtPayload },
+    @Param('cardId') cardId: string,
     @Param('memberId') memberId: string,
   ) {
-    return this.cardMemberService.remove(req.user.uid, memberId);
+    return this.cardMemberService.remove(req.user.uid, memberId, cardId);
   }
 }

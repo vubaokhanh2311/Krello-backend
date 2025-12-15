@@ -243,6 +243,10 @@ export class CardService {
       where: { cardId },
     });
 
+    await this.prisma.comment.deleteMany({
+      where: { cardId },
+    });
+
     await this.prisma.card.delete({
       where: { id: cardId },
     });
