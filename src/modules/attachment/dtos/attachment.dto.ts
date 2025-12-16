@@ -7,6 +7,7 @@ export class CreateAttachmentDto {
     description: 'Name of the file',
     example: 'project-specifications.pdf',
   })
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
   fileName: string;
@@ -26,9 +27,10 @@ export class UpdateAttachmentDto {
     description: 'Name of the file',
     example: 'updated-specifications.pdf',
   })
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
-  fileName: string;
+  fileName?: string;
 }
 
 export class AttachmentQueryDto extends PaginationDto {

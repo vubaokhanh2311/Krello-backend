@@ -11,6 +11,7 @@ import {
   Delete,
   UploadedFile,
   UseInterceptors,
+  Patch,
 } from '@nestjs/common';
 import { AttachmentService } from './attachment.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -68,7 +69,7 @@ export class AttachmentController {
     return this.attachmentService.create(userId, cardId, dto);
   }
 
-  @Put('attachments/:attachmentId')
+  @Patch('attachments/:attachmentId')
   @ApiOperation({ summary: 'Update attachments' })
   async update(
     @Req() req: Request & { user: { uid: string } },
