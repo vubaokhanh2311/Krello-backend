@@ -28,12 +28,16 @@ import {
   checkBoardAccess,
 } from '../../common/utils/index';
 import { RoleType } from '@prisma/client';
+import { SocketEventsService } from '../socket/socket-events.service';
+import { ActivityService } from '../activity/activity.service';
 
 @Injectable()
 export class BoardService {
   constructor(
     private prisma: PrismaService,
     private email: EmailService,
+    private socketEvents: SocketEventsService,
+    private activityService: ActivityService,
   ) {}
 
   async findAll(userId: string, query: BoardQueryDto) {
@@ -97,7 +101,7 @@ export class BoardService {
   }
 
   async create(userId: string, dto: CreateBoardDto) {
-    return this.prisma.board.create({
+    const board = await this.prisma.board.create({
       data: {
         ...dto,
         ownerId: userId,
@@ -111,6 +115,10 @@ export class BoardService {
         updatedAt: true,
       },
     });
+
+    this.socketEvents.emitBoardCreated(board.id, board);
+    void this.activityService.logBoardCreated(board.id, userId);
+    return board;
   }
 
   async update(userId: string, boardId: string, dto: UpdateBoardDto) {
@@ -122,7 +130,7 @@ export class BoardService {
     if (board.ownerId !== userId)
       throw new ForbiddenException(ERROR_MESSAGES.AUTH.ACCESS_DENIED);
 
-    return this.prisma.board.update({
+    const updated = await this.prisma.board.update({
       where: { id: boardId },
       data: dto,
       select: {
@@ -134,6 +142,10 @@ export class BoardService {
         updatedAt: true,
       },
     });
+
+    this.socketEvents.emitBoardUpdated(boardId, updated);
+    void this.activityService.logBoardUpdated(boardId, userId);
+    return updated;
   }
 
   async remove(userId: string, boardId: string) {
@@ -146,6 +158,8 @@ export class BoardService {
       throw new ForbiddenException(ERROR_MESSAGES.AUTH.ACCESS_DENIED);
 
     await this.prisma.board.delete({ where: { id: boardId } });
+    this.socketEvents.emitBoardDeleted(boardId);
+    void this.activityService.logBoardDeleted(boardId, userId);
     return { deleted: true };
   }
 
@@ -185,6 +199,17 @@ export class BoardService {
       inviteEmailTemplate(board.name, acceptLink),
     );
 
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (user) {
+      this.socketEvents.emitMemberAdded(boardId, {
+        userId: user.id,
+        email,
+        role,
+        invitationId: invitation.id,
+      });
+      this.activityService.logBoardMemberAdded(boardId, user.id, ownerId);
+    }
+
     return { message: SUCCESS_MESSAGES.BOARD.EMAIL_SENT };
   }
 
@@ -204,7 +229,6 @@ export class BoardService {
     if (!user || user.email !== invite.email)
       throw new ForbiddenException(ERROR_MESSAGES.INVITATION.EMAIL_MISMATCH);
 
-    // Kiểm tra xem user đã là member của board chưa
     const existingMember = await this.prisma.boardMember.findUnique({
       where: {
         boardId_userId: {
@@ -215,13 +239,25 @@ export class BoardService {
     });
 
     if (!existingMember) {
-      await this.prisma.boardMember.create({
+      const newMember = await this.prisma.boardMember.create({
         data: {
           boardId: invite.boardId,
           userId,
           role: invite.role,
         },
       });
+
+      this.socketEvents.emitMemberAdded(invite.boardId, {
+        userId,
+        email: invite.email,
+        role: invite.role,
+        memberId: newMember.id,
+      });
+      void this.activityService.logBoardMemberAdded(
+        invite.boardId,
+        userId,
+        userId,
+      );
     }
 
     await this.prisma.boardInvitation.update({
@@ -252,6 +288,12 @@ export class BoardService {
     await this.prisma.boardMember.delete({
       where: { id: member.id },
     });
+
+    this.socketEvents.emitMemberRemoved(boardId, {
+      userId,
+      memberId: member.id,
+    });
+    void this.activityService.logBoardMemberRemoved(boardId, userId, ownerId);
 
     return { message: SUCCESS_MESSAGES.BOARD.MEMBER_REMOVED };
   }
@@ -289,10 +331,17 @@ export class BoardService {
     });
     if (!member) throw new NotFoundException(ERROR_MESSAGES.BOARD.NOT_MEMBER);
 
-    await this.prisma.boardMember.update({
+    const updated = await this.prisma.boardMember.update({
       where: { id: member.id },
       data: { role },
     });
+
+    this.socketEvents.emitMemberRoleUpdated(boardId, {
+      userId,
+      role,
+      memberId: member.id,
+    });
+    void this.activityService.logBoardUpdated(boardId, ownerId);
 
     return { message: SUCCESS_MESSAGES.BOARD.MEMBER_ROLE_UPDATED };
   }

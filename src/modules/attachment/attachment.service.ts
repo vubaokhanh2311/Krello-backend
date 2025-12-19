@@ -23,9 +23,16 @@ import {
   CreateAttachmentDto,
   UpdateAttachmentDto,
 } from './dtos/attachment.dto';
+import { SocketEventsService } from '../socket/socket-events.service';
+import { ActivityService } from '../activity/activity.service';
+
 @Injectable()
 export class AttachmentService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private socketEvents: SocketEventsService,
+    private activityService: ActivityService,
+  ) {}
 
   async findAll(cardId: string, userId: string, query: AttachmentQueryDto) {
     const { page, pageSize, skip, take } = getPagination(query);
@@ -118,7 +125,7 @@ export class AttachmentService {
     const boardId = card.list.boardId;
     await checkBoardAccess(this.prisma, boardId, userId, [ROLETYPE.EDITOR]);
 
-    return this.prisma.attachment.create({
+    const attachment = await this.prisma.attachment.create({
       data: {
         ...dto,
         cardId,
@@ -148,6 +155,15 @@ export class AttachmentService {
         },
       },
     });
+
+    this.socketEvents.emitAttachmentAdded(boardId, cardId, attachment);
+    void this.activityService.logAttachmentAdded(
+      boardId,
+      cardId,
+      attachment.id,
+      userId,
+    );
+    return attachment;
   }
 
   async update(
@@ -232,6 +248,7 @@ export class AttachmentService {
       select: {
         card: {
           select: {
+            id: true,
             list: {
               select: {
                 boardId: true,
@@ -250,9 +267,18 @@ export class AttachmentService {
 
     await checkBoardAccess(this.prisma, boardId, userId, [ROLETYPE.EDITOR]);
 
+    const cardId = attachment.card.id;
     await this.prisma.attachment.delete({
       where: { id: attachmentId },
     });
+
+    this.socketEvents.emitAttachmentDeleted(boardId, cardId, attachmentId);
+    void this.activityService.logAttachmentDeleted(
+      boardId,
+      cardId,
+      attachmentId,
+      userId,
+    );
 
     return { message: SUCCESS_MESSAGES.COMMON.SUCCESS };
   }

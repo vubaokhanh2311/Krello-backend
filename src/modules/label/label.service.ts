@@ -19,10 +19,16 @@ import {
   checkBoardAccess,
   buildMeta,
 } from '../../common/utils/index';
+import { SocketEventsService } from '../socket/socket-events.service';
+import { ActivityService } from '../activity/activity.service';
 
 @Injectable()
 export class LabelService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private socketEvents: SocketEventsService,
+    private activityService: ActivityService,
+  ) {}
 
   async findAll(boardId: string, userId: string, query: LabelQueryDto) {
     const { page, pageSize, skip, take } = getPagination(query);
@@ -63,7 +69,7 @@ export class LabelService {
   async create(userId: string, boardId: string, dto: CreateLabelDto) {
     await checkBoardAccess(this.prisma, boardId, userId, [ROLETYPE.EDITOR]);
 
-    return this.prisma.label.create({
+    const label = await this.prisma.label.create({
       data: {
         ...dto,
         boardId,
@@ -77,6 +83,10 @@ export class LabelService {
         updatedAt: true,
       },
     });
+
+    void this.socketEvents.emitLabelCreated(boardId, label);
+    void this.activityService.logLabelCreated(boardId, label.id, userId);
+    return label;
   }
 
   async update(
@@ -87,7 +97,7 @@ export class LabelService {
   ) {
     await checkBoardAccess(this.prisma, boardId, userId, [ROLETYPE.EDITOR]);
 
-    return this.prisma.label.update({
+    const updated = await this.prisma.label.update({
       where: { id: labelId },
       data: { ...dto },
       select: {
@@ -99,6 +109,10 @@ export class LabelService {
         updatedAt: true,
       },
     });
+
+    void this.socketEvents.emitLabelUpdated(boardId, labelId, updated);
+    void this.activityService.logLabelUpdated(boardId, labelId, userId);
+    return updated;
   }
   async remove(userId: string, labelId: string) {
     const label = await this.prisma.label.findUnique({
@@ -121,6 +135,9 @@ export class LabelService {
     await this.prisma.label.delete({
       where: { id: labelId },
     });
+
+    void this.socketEvents.emitLabelDeleted(label.boardId, labelId);
+    void this.activityService.logLabelDeleted(label.boardId, labelId, userId);
 
     return { message: SUCCESS_MESSAGES.COMMON.SUCCESS };
   }
