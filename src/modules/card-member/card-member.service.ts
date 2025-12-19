@@ -8,9 +8,16 @@ import { CreateCardMenberDto } from './dtos/card-member.dto';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from 'src/constants/index';
 
 import { checkBoardAccess } from '../../common/utils/index';
+import { SocketEventsService } from '../socket/socket-events.service';
+import { ActivityService } from '../activity/activity.service';
+
 @Injectable()
 export class CardMemberService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private socketEvents: SocketEventsService,
+    private activityService: ActivityService,
+  ) {}
   async create(userId: string, cardId: string, dto: CreateCardMenberDto) {
     const card = await this.prisma.card.findUnique({
       where: { id: cardId },
@@ -44,7 +51,7 @@ export class CardMemberService {
       throw new ForbiddenException(ERROR_MESSAGES.CARD.MEMBER_ALREADY_EXISTS);
     }
 
-    return this.prisma.cardMember.create({
+    const member = await this.prisma.cardMember.create({
       data: {
         cardId,
         userId: dto.userId,
@@ -61,6 +68,20 @@ export class CardMemberService {
         },
       },
     });
+
+    this.socketEvents.emitCardMemberAdded(boardId, cardId, {
+      userId: dto.userId,
+      memberId: member.id,
+      user: member.user,
+    });
+    void this.activityService.logCardMemberAdded(
+      boardId,
+      cardId,
+      dto.userId,
+      userId,
+    );
+
+    return member;
   }
 
   async remove(userId: string, memberUserId: string, cardId: string) {
@@ -91,6 +112,17 @@ export class CardMemberService {
     await this.prisma.cardMember.delete({
       where: { id: cardMember.id },
     });
+
+    this.socketEvents.emitCardMemberRemoved(boardId, cardId, {
+      userId: memberUserId,
+      memberId: cardMember.id,
+    });
+    void this.activityService.logCardMemberRemoved(
+      boardId,
+      cardId,
+      memberUserId,
+      userId,
+    );
 
     return { message: SUCCESS_MESSAGES.COMMON.SUCCESS };
   }

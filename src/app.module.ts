@@ -26,6 +26,8 @@ import { UnsplashController } from './modules/unsplash/unsplash.controller';
 import { UnsplashService } from './modules/unsplash/unsplash.service';
 import { UnsplashModule } from './modules/unsplash/unsplash.module';
 import { HttpModule } from '@nestjs/axios';
+import { SocketModule } from './modules/socket/socket.module';
+import { ActivityModule } from './modules/activity/activity.module';
 
 @Module({
   imports: [
@@ -59,6 +61,8 @@ import { HttpModule } from '@nestjs/axios';
     CommentModule,
     UnsplashModule,
     HttpModule,
+    SocketModule,
+    ActivityModule,
   ],
   controllers: [
     AppController,

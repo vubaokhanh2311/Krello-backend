@@ -10,9 +10,16 @@ import {
   checkBoardAccess,
   buildMeta,
 } from '../../common/utils/index';
+import { SocketEventsService } from '../socket/socket-events.service';
+import { ActivityService } from '../activity/activity.service';
+
 @Injectable()
 export class ListService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private socketEvents: SocketEventsService,
+    private activityService: ActivityService,
+  ) {}
 
   async findAll(boardId: string, userId: string, query: ListQueryDto) {
     const { page, pageSize, skip, take } = getPagination(query);
@@ -57,7 +64,7 @@ export class ListService {
 
     const newPosition = listCount;
 
-    return this.prisma.list.create({
+    const list = await this.prisma.list.create({
       data: {
         title: dto.title,
         boardId,
@@ -71,6 +78,10 @@ export class ListService {
         updatedAt: true,
       },
     });
+
+    void this.socketEvents.emitListCreated(boardId, list);
+    void this.activityService.logListCreated(boardId, list.id, userId);
+    return list;
   }
 
   async update(
@@ -81,7 +92,7 @@ export class ListService {
   ) {
     await checkBoardAccess(this.prisma, boardId, userId, [ROLETYPE.EDITOR]);
 
-    return this.prisma.list.update({
+    const updated = await this.prisma.list.update({
       where: { id: listId },
       data: { title: dto.title },
       select: {
@@ -92,6 +103,10 @@ export class ListService {
         updatedAt: true,
       },
     });
+
+    void this.socketEvents.emitListUpdated(boardId, listId, updated);
+    void this.activityService.logListUpdated(boardId, listId, userId);
+    return updated;
   }
 
   async remove(userId: string, listId: string) {
@@ -107,6 +122,9 @@ export class ListService {
     ]);
 
     await this.prisma.list.delete({ where: { id: listId } });
+
+    void this.socketEvents.emitListDeleted(list.boardId, listId);
+    void this.activityService.logListDeleted(list.boardId, listId, userId);
 
     return { message: SUCCESS_MESSAGES.COMMON.SUCCESS };
   }

@@ -13,9 +13,16 @@ import {
   checkBoardAccess,
   buildMeta,
 } from '../../common/utils/index';
+import { SocketEventsService } from '../socket/socket-events.service';
+import { ActivityService } from '../activity/activity.service';
+
 @Injectable()
 export class CardService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private socketEvents: SocketEventsService,
+    private activityService: ActivityService,
+  ) {}
 
   async findAll(listId: string, userId: string, query: CardQueryDto) {
     const { page, pageSize, skip, take } = getPagination(query);
@@ -115,7 +122,6 @@ export class CardService {
     const index = dto.position ?? cards.length;
 
     let newPos: number;
-
     if (cards.length === 0) {
       newPos = 1024;
     } else if (index <= 0) {
@@ -154,6 +160,12 @@ export class CardService {
       },
     });
 
+    this.socketEvents.emitCardCreated(list.board.id, {
+      card: newCard,
+      listId,
+    });
+
+    void this.activityService.logCardCreated(list.board.id, newCard.id, userId);
     return newCard;
   }
 
@@ -211,7 +223,12 @@ export class CardService {
 
     await this.prisma.$transaction(transactionOps);
 
-    return this.prisma.card.findUnique({ where: { id: cardId } });
+    const updated = await this.prisma.card.findUnique({
+      where: { id: cardId },
+    });
+    this.socketEvents.emitCardUpdated(list.board.id, cardId, updated);
+    void this.activityService.logCardUpdated(list.board.id, cardId, userId);
+    return updated;
   }
 
   async remove(userId: string, cardId: string) {
@@ -247,9 +264,16 @@ export class CardService {
       where: { cardId },
     });
 
+    await this.prisma.attachment.deleteMany({
+      where: { cardId },
+    });
+
     await this.prisma.card.delete({
       where: { id: cardId },
     });
+
+    this.socketEvents.emitCardDeleted(boardId, cardId);
+    void this.activityService.logCardDeleted(boardId, cardId, userId);
 
     return { message: SUCCESS_MESSAGES.COMMON.SUCCESS };
   }
