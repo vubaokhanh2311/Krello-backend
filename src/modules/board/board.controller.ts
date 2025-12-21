@@ -42,9 +42,12 @@ export class BoardController {
   }
 
   @Get('joined')
-  async getJoinedBoards(@Req() req: { user: JwtPayload }) {
+  async getJoinedBoards(
+    @Req() req: { user: JwtPayload },
+    @Query() query: BoardQueryDto,
+  ) {
     const userId = req.user.uid;
-    return this.boardService.getBoardsJoinedByUser(userId);
+    return this.boardService.getBoardsJoinedByUser(userId, query);
   }
 
   @Get(':id/members')
