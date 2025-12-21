@@ -1,12 +1,13 @@
-import {
-  IsOptional,
-  IsString,
-  IsNumber,
-  IsDate,
-  IsNotEmpty,
-} from 'class-validator';
+import { IsString, IsNotEmpty } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 import { PaginationDto } from '../../../common/dtos/pagination.dto';
-import { Type } from 'class-transformer';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-export class UnsplashQueryDto extends PaginationDto {}
+export class UnsplashQueryDto extends PaginationDto {
+  @ApiProperty({
+    example: 'landscape',
+    description: 'Từ khoá tìm kiếm ảnh trên Unsplash',
+  })
+  @IsString()
+  @IsNotEmpty()
+  query: string;
+}

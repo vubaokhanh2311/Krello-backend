@@ -346,18 +346,32 @@ export class BoardService {
     return { message: SUCCESS_MESSAGES.BOARD.MEMBER_ROLE_UPDATED };
   }
 
-  async getBoardsJoinedByUser(userId: string) {
-    return this.prisma.board.findMany({
-      where: {
-        ownerId: { not: userId },
-        members: {
-          some: { userId },
+  async getBoardsJoinedByUser(userId: string, query: BoardQueryDto) {
+    const { page, pageSize, skip, take } = getPagination(query);
+
+    const where = {
+      ownerId: { not: userId },
+      members: {
+        some: { userId },
+      },
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.board.findMany({
+        where,
+        skip,
+        take,
+        include: {
+          owner: true,
+          members: true,
         },
-      },
-      include: {
-        owner: true,
-        members: true,
-      },
-    });
+      }),
+      this.prisma.board.count({ where }),
+    ]);
+
+    return {
+      data,
+      meta: buildMeta(total, page, pageSize),
+    };
   }
 }
