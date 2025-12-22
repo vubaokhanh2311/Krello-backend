@@ -9,6 +9,7 @@ import { JwtTokenService } from './jwt-token.service';
 import { ConfigService } from '@nestjs/config';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { RedisService } from '../../shared/redis/redis.service';
+import { OAuth2Client } from 'google-auth-library';
 import {
   SUCCESS_MESSAGES,
   ERROR_MESSAGES,
@@ -26,6 +27,7 @@ export class AuthService {
     private readonly jwtTokenService: JwtTokenService,
     private readonly redisService: RedisService,
   ) {}
+  private googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
   async register(
     userData: RegisterDto,
@@ -144,5 +146,84 @@ export class AuthService {
 
   async clearAllUserPermissionCache() {
     await this.redisService.delByPattern('permissions:user:*');
+  }
+
+  async loginWithGoogle(googleToken: string) {
+    const ticket = await this.googleClient.verifyIdToken({
+      idToken: googleToken,
+      audience: this.config.get<string>('GOOGLE_CLIENT_ID'),
+    });
+
+    const payload = ticket.getPayload();
+    if (!payload?.email) {
+      throw new HttpException(
+        ERROR_MESSAGES.AUTH.UNAUTHORIZED,
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    const { email, name, picture, sub: googleId } = payload;
+
+    let user = await this.prisma.user.findUnique({
+      where: { email },
+      include: {
+        role: {
+          include: {
+            permissions: {
+              include: { permission: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      user = await this.prisma.user.create({
+        data: {
+          email,
+          name: name ?? email.split('@')[0],
+          avatarUrl: picture,
+          googleId,
+        },
+        include: {
+          role: {
+            include: {
+              permissions: {
+                include: { permission: true },
+              },
+            },
+          },
+        },
+      });
+    }
+
+    if (!user) {
+      throw new HttpException(
+        ERROR_MESSAGES.AUTH.UNAUTHORIZED,
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    if (!user.googleId) {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { googleId },
+      });
+    }
+
+    const roleName = user.role?.name ?? null;
+    const permissions =
+      user.role?.permissions.map((rp) => rp.permission.code) ?? [];
+
+    const tokens = await this.jwtTokenService.generateTokenPair({
+      uid: user.id,
+      role: roleName,
+    });
+
+    return {
+      ...tokens,
+      role: roleName,
+      permissions,
+    };
   }
 }

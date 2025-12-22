@@ -24,6 +24,11 @@ export class AuthController {
     return this.authService.register(registerDto);
   }
 
+  @Post('google')
+  async loginWithGoogle(@Body('googleToken') token: string) {
+    return this.authService.loginWithGoogle(token);
+  }
+
   @Post('login')
   @ApiConsumes('multipart/form-data')
   @ApiBody({ type: LoginDto })
