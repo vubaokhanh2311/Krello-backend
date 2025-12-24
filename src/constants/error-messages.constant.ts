@@ -6,6 +6,8 @@ export const ERROR_MESSAGES = {
     INVALID_TOKEN: 'Invalid token',
     UNAUTHORIZED: 'Unauthorized access',
     ACCESS_DENIED: 'Access denied: insufficient permissions.',
+    EMAIL:
+      'If the email address exists in the system, you will receive a password reset email',
   },
   USER: {
     NOT_FOUND: 'User not found',
