@@ -28,15 +28,28 @@ model User {
   boardMembers BoardMember[]
   cardsCreated Card[]        @relation("CardCreator")
 
-  comments        Comment[]
-  activities      Activity[]
-  attachments     Attachment[]
-  messages        BoardMessage[]
-  notifications   Notification[]
-  roleId          String?
-  role            Role?             @relation(fields: [roleId], references: [id])
-  BoardInvitation BoardInvitation[]
-  cardMembers     CardMember[]
+  comments            Comment[]
+  activities          Activity[]
+  attachments         Attachment[]
+  messages            BoardMessage[]
+  notifications       Notification[]
+  roleId              String?
+  role                Role?                @relation(fields: [roleId], references: [id])
+  BoardInvitation     BoardInvitation[]
+  cardMembers         CardMember[]
+  resetPasswordTokens ResetPasswordToken[]
+}
+
+model ResetPasswordToken {
+  id             String   @id @default(uuid())
+  token          String   @unique
+  expirationDate DateTime
+  createdAt      DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Role {

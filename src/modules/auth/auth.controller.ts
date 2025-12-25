@@ -1,6 +1,11 @@
 import { Body, Controller, Post, UseGuards, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { RegisterDto, LoginDto } from './dtos/auth.dto';
+import {
+  RegisterDto,
+  LoginDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+} from './dtos/auth.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { JwtTokenService } from './jwt-token.service';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
@@ -48,5 +53,19 @@ export class AuthController {
   @ApiOperation({ summary: 'Refresh access token using refresh token' })
   async refresh(@Body('refreshToken') refreshToken: string) {
     return this.jwtTokenService.refreshToken(refreshToken);
+  }
+
+  @Post('forgot-password')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: ForgotPasswordDto })
+  async forgotPassword(@Body() body: ForgotPasswordDto) {
+    return this.authService.forgotPassword(body);
+  }
+
+  @Post('reset-password')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: ResetPasswordDto })
+  async resetPassword(@Body() body: ResetPasswordDto) {
+    return this.authService.resetPassword(body);
   }
 }

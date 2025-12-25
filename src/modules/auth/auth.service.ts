@@ -1,8 +1,18 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
-import { RegisterDto, LoginDto } from './dtos/auth.dto';
+import {
+  RegisterDto,
+  LoginDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+} from './dtos/auth.dto';
 import * as bcrypt from 'bcrypt';
-import { randomBytes } from 'crypto';
+import { randomBytes, createHash } from 'crypto';
 import { User } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { JwtTokenService } from './jwt-token.service';
@@ -15,9 +25,10 @@ import {
   ERROR_MESSAGES,
   USER_PERMISSIONS,
 } from '../../constants/index';
+import { EmailService } from '../../shared/mail/email.services';
 
 import { genUserPermissionKey } from '../../helpers/gen-key.helper';
-
+import { resetPasswordEmailTemplate } from '../../assets/templates/reset-password.template';
 @Injectable()
 export class AuthService {
   constructor(
@@ -26,6 +37,7 @@ export class AuthService {
     private readonly config: ConfigService,
     private readonly jwtTokenService: JwtTokenService,
     private readonly redisService: RedisService,
+    private email: EmailService,
   ) {}
   private googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -224,6 +236,96 @@ export class AuthService {
       ...tokens,
       role: roleName,
       permissions,
+    };
+  }
+
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (!user) {
+      return {
+        message: ERROR_MESSAGES.AUTH.EMAIL,
+      };
+    }
+
+    await this.prisma.resetPasswordToken.deleteMany({
+      where: { userId: user.id },
+    });
+
+    const resetToken = randomBytes(32).toString('hex');
+    const hashedToken = createHash('sha256').update(resetToken).digest('hex');
+
+    const expiration = new Date(Date.now() + 15 * 60 * 1000);
+
+    await this.prisma.resetPasswordToken.create({
+      data: {
+        token: hashedToken,
+        expirationDate: expiration,
+        userId: user.id,
+      },
+    });
+
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${encodeURIComponent(
+      resetToken,
+    )}&email=${encodeURIComponent(user.email)}`;
+
+    await this.email.sendMail(
+      user.email,
+      'Đặt lại mật khẩu',
+      'Nhấn vào liên kết để đặt lại mật khẩu',
+      resetPasswordEmailTemplate(resetLink, 15),
+    );
+
+    return {
+      message: ERROR_MESSAGES.AUTH.EMAIL,
+    };
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    const { email, token, newPassword } = dto;
+
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new BadRequestException(ERROR_MESSAGES.USER.NOT_FOUND);
+    }
+
+    const hashedToken = createHash('sha256').update(token).digest('hex');
+
+    const resetToken = await this.prisma.resetPasswordToken.findFirst({
+      where: {
+        userId: user.id,
+        token: hashedToken,
+        expirationDate: { gt: new Date() },
+      },
+    });
+
+    if (!resetToken) {
+      throw new BadRequestException(ERROR_MESSAGES.AUTH.INVALID_TOKEN);
+    }
+
+    const salt = user.salt || randomBytes(5).toString('hex');
+    const hashedPassword = await bcrypt.hash(newPassword + salt, 10);
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          password: hashedPassword,
+          salt,
+        },
+      }),
+      this.prisma.resetPasswordToken.delete({
+        where: { id: resetToken.id },
+      }),
+    ]);
+
+    return {
+      message: SUCCESS_MESSAGES.COMMON.SUCCESS,
     };
   }
 }
