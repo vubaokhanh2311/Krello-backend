@@ -96,6 +96,8 @@ export class InviteMemberDto {
 }
 
 export class ConfirmInviteDto {
+  @IsString()
+  @IsNotEmpty()
   token: string;
 }
 
