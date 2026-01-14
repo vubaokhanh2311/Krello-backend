@@ -1,0 +1,20 @@
+name: Deploy NestJS Backend
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Deploy backend
+        run: |
+          set -e
+          cd /home/ubuntu/krello-server
+          git pull origin dev
+          npm ci
+          npm run build
+          pm2 restart krello-api
