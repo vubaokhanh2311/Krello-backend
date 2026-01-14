@@ -1,4 +1,4 @@
-name: Deploy NestJS Backend
+name: Deploy NestJS Backend (DEV)
 
 on:
   push:
@@ -16,5 +16,7 @@ jobs:
           cd /home/krello/krello-server
           git pull origin dev
           npm ci
+          npx prisma generate
+          npx prisma migrate deploy
           npm run build
           pm2 restart krello-api
