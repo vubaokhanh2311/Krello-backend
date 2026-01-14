@@ -13,7 +13,7 @@ jobs:
       - name: Deploy backend
         run: |
           set -e
-          cd /home/ubuntu/krello-server
+          cd /home/krello/krello-server
           git pull origin dev
           npm ci
           npm run build
