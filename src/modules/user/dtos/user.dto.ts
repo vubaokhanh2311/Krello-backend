@@ -102,3 +102,8 @@ export class UserQueryDto extends PaginationDto {
   @IsString()
   email?: string;
 }
+
+export class SaveFcmTokenDto {
+  @IsString()
+  token: string;
+}

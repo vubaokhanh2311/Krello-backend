@@ -30,6 +30,7 @@ import {
 import { RoleType } from '@prisma/client';
 import { SocketEventsService } from '../socket/socket-events.service';
 import { ActivityService } from '../activity/activity.service';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class BoardService {
@@ -38,6 +39,7 @@ export class BoardService {
     private email: EmailService,
     private socketEvents: SocketEventsService,
     private activityService: ActivityService,
+    private notificationService: NotificationService,
   ) {}
 
   async findAll(userId: string, query: BoardQueryDto) {
@@ -207,6 +209,14 @@ export class BoardService {
         role,
         invitationId: invitation.id,
       });
+      await this.notificationService.notifyUser(user.id, {
+        title: 'Board invitation',
+        body: `You were invited to board "${board.name}"`,
+        data: {
+          type: 'BOARD_INVITE',
+          boardId,
+        },
+      });
       this.activityService.logBoardMemberAdded(boardId, user.id, ownerId);
     }
 
@@ -259,6 +269,14 @@ export class BoardService {
         userId,
       );
     }
+    await this.notificationService.notifyUser(invite.invitedById, {
+      title: 'New board member',
+      body: `${user.email} joined your board`,
+      data: {
+        type: 'BOARD_MEMBER_JOINED',
+        boardId: invite.boardId,
+      },
+    });
 
     await this.prisma.boardInvitation.update({
       where: { id: invite.id },
@@ -294,6 +312,14 @@ export class BoardService {
       memberId: member.id,
     });
     void this.activityService.logBoardMemberRemoved(boardId, userId, ownerId);
+    await this.notificationService.notifyUser(userId, {
+      title: 'Removed from board',
+      body: 'You have been removed from a board',
+      data: {
+        type: 'BOARD_MEMBER_REMOVED',
+        boardId,
+      },
+    });
 
     return { message: SUCCESS_MESSAGES.BOARD.MEMBER_REMOVED };
   }

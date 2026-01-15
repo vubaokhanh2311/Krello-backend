@@ -1,4 +1,7 @@
-export function inviteEmailTemplate(boardName: string, acceptLink: string) {
+export function inviteEmailTemplate(
+  boardName: string,
+  acceptLink: string,
+): string {
   return `
  <div
   style="
@@ -28,14 +31,14 @@ export function inviteEmailTemplate(boardName: string, acceptLink: string) {
         font-weight: 700;
       "
     >
-      Trello Clone – Board Invitation
+      Krello – Lời mời tham gia bảng
     </div>
 
     <!-- Body -->
     <div style="padding: 32px; color: #333; font-size: 16px; line-height: 1.6">
-      <p>Hi there,</p>
+      <p>Xin chào,</p>
       <p>
-        You’ve been invited to join the board <strong>"${boardName}"</strong>.
+        Bạn đã được mời tham gia bảng <strong>"${boardName}"</strong>.
       </p>
       <p style="text-align: center; margin: 40px 0">
         <a
@@ -51,7 +54,7 @@ export function inviteEmailTemplate(boardName: string, acceptLink: string) {
             font-size: 16px;
           "
         >
-          Accept Invitation
+          Chấp nhận lời mời
         </a>
       </p>
 
@@ -65,8 +68,8 @@ export function inviteEmailTemplate(boardName: string, acceptLink: string) {
           line-height: 1.4;
         "
       >
-        This invitation will expire in 7 days. If you did not expect this email,
-        please ignore it.
+        Lời mời này sẽ hết hạn sau 7 ngày. Nếu bạn không mong đợi email này,
+        vui lòng bỏ qua.
       </p>
     </div>
 
@@ -80,7 +83,7 @@ export function inviteEmailTemplate(boardName: string, acceptLink: string) {
         color: #999;
       "
     >
-      &copy; 2025 Trello Clone. All rights reserved.
+      &copy; 2025 Trello Clone. Đã đăng ký bản quyền.
     </div>
   </div>
 </div>

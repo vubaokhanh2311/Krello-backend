@@ -20,6 +20,7 @@ model User {
   password  String?
   salt      String?
   avatarUrl String?
+  fcmTokens String[]
   googleId  String?  @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

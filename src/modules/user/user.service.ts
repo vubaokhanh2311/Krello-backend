@@ -189,4 +189,43 @@ export class UserService {
       throw new NotFoundException(ERROR_MESSAGES.USER.NOT_FOUND_DELETE);
     }
   }
+
+  async addFcmToken(userId: string, token: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { fcmTokens: true },
+    });
+
+    if (!user) return;
+
+    if (!user.fcmTokens?.includes(token)) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          fcmTokens: {
+            push: token,
+          },
+        },
+      });
+    }
+  }
+  async removeFcmToken(userId: string, token: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { fcmTokens: true },
+    });
+
+    if (!user?.fcmTokens?.length) return;
+
+    const newTokens = user.fcmTokens.filter((t) => t !== token);
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        fcmTokens: {
+          set: newTokens,
+        },
+      },
+    });
+  }
 }

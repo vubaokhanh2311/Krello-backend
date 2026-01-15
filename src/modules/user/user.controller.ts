@@ -24,6 +24,7 @@ import {
   CreateUserDto,
   UserQueryDto,
   UpdateAvatarDto,
+  SaveFcmTokenDto,
 } from './dtos/user.dto';
 
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -67,6 +68,23 @@ export class UserController {
     @Body() dto: UpdateProfileDto,
   ) {
     return this.userService.updateProfile(req.user.uid, dto);
+  }
+
+  @Post('fcm-token')
+  @UseGuards(JwtAuthGuard)
+  saveFcmToken(
+    @Req() req: Request & { user: JwtPayload },
+    @Body() dto: SaveFcmTokenDto,
+  ) {
+    return this.userService.addFcmToken(req.user.uid, dto.token);
+  }
+
+  @Delete('fcm-token')
+  removeFcmToken(
+    @Req() req: Request & { user: JwtPayload },
+    @Body('token') token: string,
+  ) {
+    return this.userService.removeFcmToken(req.user.uid, token);
   }
 
   @Patch('avatar')

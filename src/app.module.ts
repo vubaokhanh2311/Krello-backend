@@ -28,6 +28,9 @@ import { UnsplashModule } from './modules/unsplash/unsplash.module';
 import { HttpModule } from '@nestjs/axios';
 import { SocketModule } from './modules/socket/socket.module';
 import { ActivityModule } from './modules/activity/activity.module';
+import { FirebaseModule } from './modules/firebase/firebase.module';
+import { NotificationService } from './modules/notification/notification.service';
+import { NotificationModule } from './modules/notification/notification.module';
 
 @Module({
   imports: [
@@ -63,6 +66,8 @@ import { ActivityModule } from './modules/activity/activity.module';
     HttpModule,
     SocketModule,
     ActivityModule,
+    FirebaseModule,
+    NotificationModule,
   ],
   controllers: [
     AppController,
@@ -80,6 +85,7 @@ import { ActivityModule } from './modules/activity/activity.module';
     CardService,
     CardLabelService,
     UnsplashService,
+    NotificationService,
   ],
 })
 export class AppModule {}
