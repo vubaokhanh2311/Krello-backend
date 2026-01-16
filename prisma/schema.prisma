@@ -20,7 +20,6 @@ model User {
   password  String?
   salt      String?
   avatarUrl String?
-  fcmTokens String[]
   googleId  String?  @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -39,6 +38,7 @@ model User {
   BoardInvitation     BoardInvitation[]
   cardMembers         CardMember[]
   resetPasswordTokens ResetPasswordToken[]
+  devices             Device[]
 }
 
 model ResetPasswordToken {
@@ -292,4 +292,21 @@ model Notification {
 
   userId String
   user   User   @relation(fields: [userId], references: [id])
+}
+
+model Device {
+  id              String   @id @default(uuid())
+  userId          String
+  jti             String   @unique
+  deviceId        String?
+  platform        String
+  fcmToken        String?
+  refreshTokenExp DateTime
+  lastActiveAt    DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([refreshTokenExp])
 }

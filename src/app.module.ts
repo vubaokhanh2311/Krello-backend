@@ -31,7 +31,9 @@ import { ActivityModule } from './modules/activity/activity.module';
 import { FirebaseModule } from './modules/firebase/firebase.module';
 import { NotificationService } from './modules/notification/notification.service';
 import { NotificationModule } from './modules/notification/notification.module';
-
+import { DeviceService } from './modules/device/device.service';
+import { DeviceModule } from './modules/device/device.module';
+import { ScheduleModule } from '@nestjs/schedule';
 @Module({
   imports: [
     SharedModule,
@@ -53,6 +55,7 @@ import { NotificationModule } from './modules/notification/notification.module';
         }),
       ],
     }),
+    ScheduleModule.forRoot(),
     UserModule,
     BoardModule,
     ListModule,
@@ -68,6 +71,7 @@ import { NotificationModule } from './modules/notification/notification.module';
     ActivityModule,
     FirebaseModule,
     NotificationModule,
+    DeviceModule,
   ],
   controllers: [
     AppController,
@@ -86,6 +90,7 @@ import { NotificationModule } from './modules/notification/notification.module';
     CardLabelService,
     UnsplashService,
     NotificationService,
+    DeviceService,
   ],
 })
 export class AppModule {}

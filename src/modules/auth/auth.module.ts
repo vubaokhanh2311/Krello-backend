@@ -9,7 +9,7 @@ import { JwtTokenService } from './jwt-token.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RedisService } from '../../shared/redis/redis.service';
 import { JwtStrategy } from './strategy/jwt.strategy';
-
+import { DeviceModule } from '../device/device.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -17,6 +17,7 @@ import { JwtStrategy } from './strategy/jwt.strategy';
     }),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({}),
+    DeviceModule,
   ],
   controllers: [AuthController],
   providers: [

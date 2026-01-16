@@ -27,23 +27,38 @@ export class NotificationService {
   }
 
   async notifyUser(userId: string, payload: NotifyPayload) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { fcmTokens: true },
+    const devices = await this.prisma.device.findMany({
+      where: {
+        userId,
+        fcmToken: { not: null },
+        refreshTokenExp: { gt: new Date() },
+      },
+      select: { fcmToken: true },
     });
 
-    if (!user?.fcmTokens?.length) return;
+    const tokens = devices
+      .map((d) => d.fcmToken)
+      .filter((t): t is string => Boolean(t));
 
-    await this.send(user.fcmTokens, payload);
+    if (!tokens.length) return;
+
+    await this.send(tokens, payload);
   }
 
   async notifyUsers(userIds: string[], payload: NotifyPayload) {
-    const users = await this.prisma.user.findMany({
-      where: { id: { in: userIds } },
-      select: { fcmTokens: true },
+    const devices = await this.prisma.device.findMany({
+      where: {
+        userId: { in: userIds },
+        fcmToken: { not: null },
+        refreshTokenExp: { gt: new Date() },
+      },
+      select: { fcmToken: true },
     });
 
-    const tokens = users.flatMap((u) => u.fcmTokens ?? []);
+    const tokens = devices
+      .map((d) => d.fcmToken)
+      .filter((t): t is string => Boolean(t));
+
     if (!tokens.length) return;
 
     await this.send(tokens, payload);
