@@ -4,6 +4,7 @@ import {
   RegisterDto,
   LoginDto,
   ForgotPasswordDto,
+  LoginGoogleDto,
   ResetPasswordDto,
 } from './dtos/auth.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -30,8 +31,8 @@ export class AuthController {
   }
 
   @Post('google')
-  async loginWithGoogle(@Body('googleToken') token: string) {
-    return this.authService.loginWithGoogle(token);
+  async loginWithGoogle(@Body() dto: LoginGoogleDto) {
+    return this.authService.loginWithGoogle(dto);
   }
 
   @Post('login')

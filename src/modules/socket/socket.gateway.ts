@@ -11,6 +11,8 @@ import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { RedisService } from '../../shared/redis/redis.service';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 @WebSocketGateway({
   cors: {
@@ -24,13 +26,10 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private logger = new Logger('SocketGateway');
 
-  private userSockets = new Map<string, Set<string>>();
-
-  private socketUsers = new Map<string, string>();
-
   constructor(
-    private jwtService: JwtService,
-    private configService: ConfigService,
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
+    private readonly redisService: RedisService,
   ) {}
 
   async handleConnection(client: Socket) {
@@ -40,68 +39,69 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
         client.handshake.headers.authorization?.split(' ')[1];
 
       if (!token) {
-        this.logger.warn(' Connection without token');
+        this.logger.warn('Connection without token');
         client.disconnect();
         return;
       }
 
-      const secret =
-        this.configService.get<string>('ACCESS_TOKEN_KEY') ||
-        this.configService.get<string>('JWT_SECRET') ||
-        'your-secret-key';
-      const payload = await this.jwtService.verifyAsync(token, { secret });
+      const payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
+        secret:
+          this.configService.get<string>('ACCESS_TOKEN_KEY') ??
+          this.configService.get<string>('JWT_SECRET'),
+      });
+
       const userId = payload?.uid;
-
       if (!userId) {
-        this.logger.warn('Invalid token payload');
         client.disconnect();
         return;
       }
 
-      const isFirstConnection = !this.userSockets.has(userId);
+      const socketId = client.id;
 
-      if (!this.userSockets.has(userId)) {
-        this.userSockets.set(userId, new Set());
-      }
+      await this.redisService.sadd(`socket:user:${userId}`, socketId);
 
-      this.userSockets.get(userId)!.add(client.id);
-      this.socketUsers.set(client.id, userId);
+      await this.redisService.set(`socket:client:${socketId}`, userId);
 
       client.join(`user:${userId}`);
 
-      this.logger.log(` Client connected: ${client.id} (User: ${userId})`);
+      const socketCount = await this.redisService.scard(
+        `socket:user:${userId}`,
+      );
 
-      if (isFirstConnection) {
-        this.logger.log(` User online: ${userId}`);
+      if (socketCount === 1) {
+        this.logger.log(`User online: ${userId}`);
         this.server.emit('user:online', { userId });
       }
+
+      this.logger.log(`Client connected: ${socketId} (User: ${userId})`);
     } catch (error) {
-      this.logger.error(` Connection error: ${error.message}`);
+      this.logger.error(`Connection error: ${error.message}`);
       client.disconnect();
     }
   }
 
-  handleDisconnect(client: Socket) {
-    const userId = this.socketUsers.get(client.id);
+  async handleDisconnect(client: Socket) {
+    const socketId = client.id;
+
+    const userId = await this.redisService.get(`socket:client:${socketId}`);
 
     if (!userId) {
-      this.logger.log(` Client disconnected: ${client.id}`);
+      this.logger.log(`Client disconnected: ${socketId}`);
       return;
     }
 
-    const sockets = this.userSockets.get(userId);
-    sockets?.delete(client.id);
+    await this.redisService.srem(`socket:user:${userId}`, socketId);
+    await this.redisService.del(`socket:client:${socketId}`);
 
-    this.socketUsers.delete(client.id);
+    const socketCount = await this.redisService.scard(`socket:user:${userId}`);
 
-    if (!sockets || sockets.size === 0) {
-      this.userSockets.delete(userId);
-
-      this.logger.log(` User offline: ${userId}`);
+    if (socketCount === 0) {
+      await this.redisService.del(`socket:user:${userId}`);
+      this.logger.log(`User offline: ${userId}`);
       this.server.emit('user:offline', { userId });
     }
 
-    this.logger.log(` Client disconnected: ${client.id}`);
+    this.logger.log(`Client disconnected: ${socketId}`);
   }
 
   @SubscribeMessage('board:join')
@@ -112,7 +112,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!data?.boardId) return;
 
     client.join(`board:${data.boardId}`);
-    this.logger.log(` Client ${client.id} joined board ${data.boardId}`);
+    this.logger.log(`Client ${client.id} joined board ${data.boardId}`);
   }
 
   @SubscribeMessage('board:leave')
@@ -137,20 +137,18 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.server.emit(event, data);
   }
 
-  isUserOnline(userId: string): boolean {
-    return this.userSockets.has(userId);
-  }
-
-  getOnlineUsers(): string[] {
-    return [...this.userSockets.keys()];
+  async isUserOnline(userId: string): Promise<boolean> {
+    const count = await this.redisService.scard(`socket:user:${userId}`);
+    return count > 0;
   }
 
   @SubscribeMessage('typing:start')
-  handleTypingStart(
+  async handleTypingStart(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { boardId: string; cardId: string },
   ) {
-    const userId = this.socketUsers.get(client.id);
+    const userId = await this.redisService.get(`socket:client:${client.id}`);
+
     if (!userId || !data?.boardId || !data?.cardId) return;
 
     client.to(`board:${data.boardId}`).emit('user:typing', {
@@ -160,11 +158,12 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('typing:stop')
-  handleTypingStop(
+  async handleTypingStop(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { boardId: string; cardId: string },
   ) {
-    const userId = this.socketUsers.get(client.id);
+    const userId = await this.redisService.get(`socket:client:${client.id}`);
+
     if (!userId || !data?.boardId || !data?.cardId) return;
 
     client.to(`board:${data.boardId}`).emit('user:stopped-typing', {

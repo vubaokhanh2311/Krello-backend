@@ -19,7 +19,7 @@ export class EmailService {
 
   async sendMail(to: string, subject: string, text: string, html?: string) {
     const mailOptions = {
-      from: `"User App" <${process.env.EMAIL_USERNAME}>`,
+      from: `"Krello" <${process.env.EMAIL_USERNAME}>`,
       to,
       subject,
       text,

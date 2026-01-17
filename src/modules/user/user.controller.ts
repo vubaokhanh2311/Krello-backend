@@ -24,6 +24,7 @@ import {
   CreateUserDto,
   UserQueryDto,
   UpdateAvatarDto,
+  SaveFcmTokenDto,
 } from './dtos/user.dto';
 
 import { FileInterceptor } from '@nestjs/platform-express';

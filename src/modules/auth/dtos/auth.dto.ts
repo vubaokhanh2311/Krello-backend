@@ -1,5 +1,12 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, MinLength, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsEmail,
+  IsNotEmpty,
+  MinLength,
+  IsString,
+  IsEnum,
+  IsOptional,
+} from 'class-validator';
 
 export class RegisterDto {
   @ApiProperty({
@@ -25,6 +32,12 @@ export class RegisterDto {
   name: string;
 }
 
+export enum DevicePlatform {
+  WEB = 'web',
+  IOS = 'ios',
+  ANDROID = 'android',
+}
+
 export class LoginDto {
   @ApiProperty({
     example: 'user@example.com',
@@ -40,6 +53,28 @@ export class LoginDto {
   @IsNotEmpty()
   @MinLength(6)
   password: string;
+
+  @ApiProperty({
+    example: 'web',
+    enum: DevicePlatform,
+    description: 'Device platform',
+  })
+  @IsEnum(DevicePlatform)
+  platform: DevicePlatform;
+
+  @ApiPropertyOptional({
+    example: 'fcm-token-example',
+    description: 'Firebase Cloud Messaging token',
+  })
+  @IsOptional()
+  fcmToken?: string;
+
+  @ApiPropertyOptional({
+    example: 'device-id-example',
+    description: 'Unique device identifier',
+  })
+  @IsOptional()
+  deviceId?: string;
 }
 
 export class ForgotPasswordDto {
@@ -61,4 +96,20 @@ export class ResetPasswordDto {
   @IsString()
   @MinLength(6)
   newPassword: string;
+}
+
+export class LoginGoogleDto {
+  @IsString()
+  googleToken: string;
+
+  @IsEnum(DevicePlatform)
+  platform: DevicePlatform;
+
+  @IsOptional()
+  @IsString()
+  deviceId?: string;
+
+  @IsOptional()
+  @IsString()
+  fcmToken?: string;
 }

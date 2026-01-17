@@ -28,7 +28,12 @@ import { UnsplashModule } from './modules/unsplash/unsplash.module';
 import { HttpModule } from '@nestjs/axios';
 import { SocketModule } from './modules/socket/socket.module';
 import { ActivityModule } from './modules/activity/activity.module';
-
+import { FirebaseModule } from './modules/firebase/firebase.module';
+import { NotificationService } from './modules/notification/notification.service';
+import { NotificationModule } from './modules/notification/notification.module';
+import { DeviceService } from './modules/device/device.service';
+import { DeviceModule } from './modules/device/device.module';
+import { ScheduleModule } from '@nestjs/schedule';
 @Module({
   imports: [
     SharedModule,
@@ -50,6 +55,7 @@ import { ActivityModule } from './modules/activity/activity.module';
         }),
       ],
     }),
+    ScheduleModule.forRoot(),
     UserModule,
     BoardModule,
     ListModule,
@@ -63,6 +69,9 @@ import { ActivityModule } from './modules/activity/activity.module';
     HttpModule,
     SocketModule,
     ActivityModule,
+    FirebaseModule,
+    NotificationModule,
+    DeviceModule,
   ],
   controllers: [
     AppController,
@@ -80,6 +89,8 @@ import { ActivityModule } from './modules/activity/activity.module';
     CardService,
     CardLabelService,
     UnsplashService,
+    NotificationService,
+    DeviceService,
   ],
 })
 export class AppModule {}

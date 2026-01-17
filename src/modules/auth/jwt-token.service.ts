@@ -48,7 +48,14 @@ export class JwtTokenService {
       REFRESH_TOKEN_TTL,
     );
 
-    return { accessToken, refreshToken, jti };
+    const refreshTokenExp = new Date(Date.now() + REFRESH_TOKEN_TTL * 1000);
+
+    return {
+      accessToken,
+      refreshToken,
+      jti,
+      refreshTokenExp,
+    };
   }
 
   async verifyToken(

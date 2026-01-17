@@ -10,6 +10,7 @@ import {
   LoginDto,
   ForgotPasswordDto,
   ResetPasswordDto,
+  LoginGoogleDto,
 } from './dtos/auth.dto';
 import * as bcrypt from 'bcrypt';
 import { randomBytes, createHash } from 'crypto';
@@ -29,6 +30,7 @@ import { EmailService } from '../../shared/mail/email.services';
 
 import { genUserPermissionKey } from '../../helpers/gen-key.helper';
 import { resetPasswordEmailTemplate } from '../../assets/templates/reset-password.template';
+import { DeviceService } from '../device/device.service';
 @Injectable()
 export class AuthService {
   constructor(
@@ -38,6 +40,7 @@ export class AuthService {
     private readonly jwtTokenService: JwtTokenService,
     private readonly redisService: RedisService,
     private email: EmailService,
+    private deviceService: DeviceService,
   ) {}
   private googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -71,18 +74,14 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const { email, password } = dto;
+    const { email, password, platform, fcmToken, deviceId } = dto;
 
     const user = await this.prisma.user.findUnique({
       where: { email },
       include: {
         role: {
           include: {
-            permissions: {
-              include: {
-                permission: true,
-              },
-            },
+            permissions: { include: { permission: true } },
           },
         },
       },
@@ -104,7 +103,7 @@ export class AuthService {
     }
 
     const roleName = user.role?.name ?? null;
-    const permissionCodes =
+    const permissions =
       user.role?.permissions.map((rp) => rp.permission.code) ?? [];
 
     const tokens = await this.jwtTokenService.generateTokenPair({
@@ -112,15 +111,37 @@ export class AuthService {
       role: roleName,
     });
 
+    const refreshPayload = await this.jwtTokenService.verifyToken(
+      tokens.refreshToken,
+      'refresh',
+    );
+
+    await this.deviceService.create({
+      userId: user.id,
+      jti: tokens.jti,
+      platform,
+      deviceId,
+      fcmToken,
+      refreshTokenExp: new Date(refreshPayload.exp! * 1000),
+    });
+
     return {
-      ...tokens,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
       role: roleName,
-      permissions: permissionCodes,
+      permissions,
     };
   }
 
   async logout(payload: JwtPayload) {
-    await this.jwtTokenService.revokeToken(payload.jti);
+    const { jti } = payload;
+
+    await this.jwtTokenService.revokeToken(jti);
+
+    await this.jwtTokenService.revokeRefreshToken(jti);
+
+    await this.deviceService.deleteByJti(jti);
+
     return { message: SUCCESS_MESSAGES.AUTH.LOGOUT };
   }
 
@@ -160,9 +181,9 @@ export class AuthService {
     await this.redisService.delByPattern('permissions:user:*');
   }
 
-  async loginWithGoogle(googleToken: string) {
+  async loginWithGoogle(dto: LoginGoogleDto) {
     const ticket = await this.googleClient.verifyIdToken({
-      idToken: googleToken,
+      idToken: dto.googleToken,
       audience: this.config.get<string>('GOOGLE_CLIENT_ID'),
     });
 
@@ -181,9 +202,7 @@ export class AuthService {
       include: {
         role: {
           include: {
-            permissions: {
-              include: { permission: true },
-            },
+            permissions: { include: { permission: true } },
           },
         },
       },
@@ -200,20 +219,11 @@ export class AuthService {
         include: {
           role: {
             include: {
-              permissions: {
-                include: { permission: true },
-              },
+              permissions: { include: { permission: true } },
             },
           },
         },
       });
-    }
-
-    if (!user) {
-      throw new HttpException(
-        ERROR_MESSAGES.AUTH.UNAUTHORIZED,
-        HttpStatus.UNAUTHORIZED,
-      );
     }
 
     if (!user.googleId) {
@@ -232,8 +242,23 @@ export class AuthService {
       role: roleName,
     });
 
+    const refreshPayload = await this.jwtTokenService.verifyToken(
+      tokens.refreshToken,
+      'refresh',
+    );
+
+    await this.deviceService.create({
+      userId: user.id,
+      jti: tokens.jti,
+      platform: dto.platform,
+      deviceId: dto.deviceId,
+      fcmToken: dto.fcmToken,
+      refreshTokenExp: new Date(refreshPayload.exp! * 1000),
+    });
+
     return {
-      ...tokens,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
       role: roleName,
       permissions,
     };
