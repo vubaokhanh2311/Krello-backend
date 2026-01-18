@@ -7,12 +7,12 @@ on:
 
 jobs:
   deploy:
-    runs-on: [self-hosted, build]
+    runs-on: self-hosted
 
     steps:
       - name: Deploy backend via SSH
         run: |
-          ssh krello@BE_VM_IP << 'EOF'
+          ssh be_vm << 'EOF'
             set -e
             cd /home/krello/krello-server
             git pull origin dev
