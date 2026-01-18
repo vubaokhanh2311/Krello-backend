@@ -7,16 +7,18 @@ on:
 
 jobs:
   deploy:
-    runs-on: self-hosted
+    runs-on: [self-hosted, build]
 
     steps:
-      - name: Deploy backend
+      - name: Deploy backend via SSH
         run: |
-          set -e
-          cd /home/krello/krello-server
-          git pull origin dev
-          npm ci
-          npx prisma generate
-          npx prisma migrate deploy
-          npm run build
-          pm2 restart krello-api
+          ssh krello@BE_VM_IP << 'EOF'
+            set -e
+            cd /home/krello/krello-server
+            git pull origin dev
+            npm ci
+            npx prisma generate
+            npx prisma migrate deploy
+            npm run build
+            pm2 restart krello-api
+          EOF
