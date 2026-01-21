@@ -5,6 +5,7 @@ import {
   MinLength,
   IsString,
   IsEnum,
+  IsBoolean,
   IsOptional,
 } from 'class-validator';
 
@@ -75,6 +76,10 @@ export class LoginDto {
   })
   @IsOptional()
   deviceId?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  remember?: boolean;
 }
 
 export class ForgotPasswordDto {

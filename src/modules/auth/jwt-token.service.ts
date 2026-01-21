@@ -9,7 +9,8 @@ import {
   genRefreshTokenKey,
   genRevokeKey,
 } from '../../helpers/gen-redis-key.helper';
-import { ERROR_MESSAGES, REFRESH_TOKEN_TTL } from '../../constants/index';
+import { ERROR_MESSAGES } from '../../constants/index';
+
 @Injectable()
 export class JwtTokenService {
   constructor(
@@ -18,8 +19,12 @@ export class JwtTokenService {
     private readonly redisService: RedisService,
   ) {}
 
-  async generateTokenPair(payload: { uid: string; role?: string | null }) {
+  async generateTokenPair(
+    payload: { uid: string; role?: string | null },
+    refreshTtl: number,
+  ) {
     const jti = randomUUID();
+
     const jwtPayload: JwtPayload = {
       uid: payload.uid,
       jti,
@@ -29,32 +34,28 @@ export class JwtTokenService {
     const accessToken = await this.jwtService.signAsync(jwtPayload, {
       secret:
         this.config.get<string>('ACCESS_TOKEN_KEY') ?? 'default_access_secret',
-      expiresIn: (this.config.get<string>('ACCESS_TOKEN_EXPIRES_IN') ??
-        '15m') as any,
+      expiresIn: this.config.get<number>('ACCESS_TOKEN_EXPIRES_IN') ?? 900,
     });
 
     const refreshToken = await this.jwtService.signAsync(jwtPayload, {
       secret:
         this.config.get<string>('REFRESH_TOKEN_KEY') ??
         'default_refresh_secret',
-      expiresIn: (this.config.get<string>('REFRESH_TOKEN_EXPIRES_IN') ??
-        '7d') as any,
+      expiresIn: refreshTtl,
     });
 
     await this.redisService.set(
       genRefreshTokenKey(jti),
       refreshToken,
       'EX',
-      REFRESH_TOKEN_TTL,
+      refreshTtl,
     );
-
-    const refreshTokenExp = new Date(Date.now() + REFRESH_TOKEN_TTL * 1000);
 
     return {
       accessToken,
       refreshToken,
       jti,
-      refreshTokenExp,
+      refreshTokenExp: new Date(Date.now() + refreshTtl * 1000),
     };
   }
 
@@ -81,7 +82,7 @@ export class JwtTokenService {
     return !!token;
   }
 
-  async revokeToken(jti: string, expiresInSeconds = 3600) {
+  async revokeAccessToken(jti: string, expiresInSeconds = 3600) {
     const key = genRevokeKey(jti);
     await this.redisService.set(key, 'revoked', 'EX', expiresInSeconds);
   }
@@ -94,20 +95,25 @@ export class JwtTokenService {
 
   async refreshToken(oldRefreshToken: string) {
     let payload: JwtPayload;
+
     try {
       payload = await this.verifyToken(oldRefreshToken, 'refresh');
     } catch {
       throw new UnauthorizedException(ERROR_MESSAGES.AUTH.INVALID_TOKEN);
     }
 
-    const isValid = await this.isRefreshTokenValid(payload.jti);
-    if (!isValid) {
+    const redisKey = genRefreshTokenKey(payload.jti);
+
+    const ttl = await this.redisService.ttl(redisKey);
+    if (ttl <= 0) {
       throw new UnauthorizedException(ERROR_MESSAGES.AUTH.INVALID_TOKEN);
     }
 
-    await this.revokeRefreshToken(payload.jti);
+    await this.redisService.del(redisKey);
 
-    const newPair = await this.generateTokenPair({ uid: payload.uid });
-    return newPair;
+    return this.generateTokenPair(
+      { uid: payload.uid, role: payload.role },
+      ttl,
+    );
   }
 }

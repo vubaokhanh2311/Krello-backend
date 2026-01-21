@@ -25,6 +25,8 @@ import {
   SUCCESS_MESSAGES,
   ERROR_MESSAGES,
   USER_PERMISSIONS,
+  REFRESH_TOKEN_TTL_SHORT,
+  REFRESH_TOKEN_TTL_LONG,
 } from '../../constants/index';
 import { EmailService } from '../../shared/mail/email.services';
 
@@ -74,7 +76,7 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const { email, password, platform, fcmToken, deviceId } = dto;
+    const { email, password, platform, fcmToken, deviceId, remember } = dto;
 
     const user = await this.prisma.user.findUnique({
       where: { email },
@@ -106,10 +108,17 @@ export class AuthService {
     const permissions =
       user.role?.permissions.map((rp) => rp.permission.code) ?? [];
 
-    const tokens = await this.jwtTokenService.generateTokenPair({
-      uid: user.id,
-      role: roleName,
-    });
+    const refreshTtl = remember
+      ? REFRESH_TOKEN_TTL_LONG
+      : REFRESH_TOKEN_TTL_SHORT;
+
+    const tokens = await this.jwtTokenService.generateTokenPair(
+      {
+        uid: user.id,
+        role: roleName,
+      },
+      refreshTtl,
+    );
 
     const refreshPayload = await this.jwtTokenService.verifyToken(
       tokens.refreshToken,
@@ -136,7 +145,7 @@ export class AuthService {
   async logout(payload: JwtPayload) {
     const { jti } = payload;
 
-    await this.jwtTokenService.revokeToken(jti);
+    await this.jwtTokenService.revokeAccessToken(jti);
 
     await this.jwtTokenService.revokeRefreshToken(jti);
 
@@ -237,10 +246,13 @@ export class AuthService {
     const permissions =
       user.role?.permissions.map((rp) => rp.permission.code) ?? [];
 
-    const tokens = await this.jwtTokenService.generateTokenPair({
-      uid: user.id,
-      role: roleName,
-    });
+    const tokens = await this.jwtTokenService.generateTokenPair(
+      {
+        uid: user.id,
+        role: roleName ?? undefined,
+      },
+      REFRESH_TOKEN_TTL_LONG,
+    );
 
     const refreshPayload = await this.jwtTokenService.verifyToken(
       tokens.refreshToken,
