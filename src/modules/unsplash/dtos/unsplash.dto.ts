@@ -5,7 +5,7 @@ import { PaginationDto } from '../../../common/dtos/pagination.dto';
 export class UnsplashQueryDto extends PaginationDto {
   @ApiProperty({
     example: 'landscape',
-    description: 'Từ khoá tìm kiếm ảnh trên Unsplash',
+    description: 'Search keyword for Unsplash images',
   })
   @IsString()
   @IsNotEmpty()
