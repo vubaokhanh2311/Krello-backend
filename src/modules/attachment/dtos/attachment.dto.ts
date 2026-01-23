@@ -15,7 +15,7 @@ export class CreateAttachmentDto {
   @ApiPropertyOptional({
     type: 'string',
     format: 'binary',
-    description: 'Attachmen',
+    description: 'Attachment file (binary)',
   })
   @IsOptional()
   @IsString()

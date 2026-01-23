@@ -96,6 +96,10 @@ export class InviteMemberDto {
 }
 
 export class ConfirmInviteDto {
+  @ApiProperty({
+    example: 'invitation-token-from-email',
+    description: 'Board invitation token received via email',
+  })
   @IsString()
   @IsNotEmpty()
   token: string;
