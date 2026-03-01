@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { ERROR_MESSAGES } from '../../constants/error-messages.constant';
@@ -188,5 +189,32 @@ export class UserService {
     } catch (error) {
       throw new NotFoundException(ERROR_MESSAGES.USER.NOT_FOUND_DELETE);
     }
+  }
+
+  async getMyStats(userId: string) {
+    if (!userId) {
+      throw new BadRequestException(ERROR_MESSAGES.USER.NOT_FOUND);
+    }
+
+    const [ownedBoards, joinedBoards, tasksCreated] =
+      await this.prisma.$transaction([
+        this.prisma.board.count({
+          where: { ownerId: userId },
+        }),
+
+        this.prisma.boardMember.count({
+          where: { userId },
+        }),
+
+        this.prisma.card.count({
+          where: { createdBy: userId },
+        }),
+      ]);
+
+    return {
+      ownedBoards,
+      joinedBoards,
+      tasksCreated,
+    };
   }
 }

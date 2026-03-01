@@ -79,6 +79,67 @@ export class ActivityService {
     };
   }
 
+  async findMyActivities(userId: string, query: ActivityQueryDto) {
+    const { page, pageSize, skip, take } = getPagination(query);
+
+    const where: any = {
+      userId,
+    };
+
+    if (query.action) {
+      where.action = query.action;
+    }
+    if (query.targetType) {
+      where.targetType = query.targetType;
+    }
+    if (query.targetId) {
+      where.targetId = query.targetId;
+    }
+
+    const orderBy = parseOrder(query.order) || { createdAt: 'desc' };
+
+    const selectFields = parseSelectFields(query.fields, {
+      id: true,
+      action: true,
+      targetType: true,
+      targetId: true,
+      boardId: true,
+      createdAt: true,
+    });
+
+    const [data, total] = await Promise.all([
+      this.prisma.activity.findMany({
+        where,
+        skip,
+        take,
+        orderBy,
+        select: {
+          ...selectFields,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              avatarUrl: true,
+            },
+          },
+          board: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      }),
+      this.prisma.activity.count({ where }),
+    ]);
+
+    return {
+      data,
+      meta: buildMeta(total, page, pageSize),
+    };
+  }
+
   async create(dto: CreateActivityDto) {
     const activity = await this.prisma.activity.create({
       data: {
@@ -390,4 +451,3 @@ export class ActivityService {
     });
   }
 }
-

@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  Query,
-  Param,
-  UseGuards,
-  Req,
-} from '@nestjs/common';
+import { Controller, Get, Query, Param, UseGuards, Req } from '@nestjs/common';
 import { ActivityService } from './activity.service';
 import { ActivityQueryDto } from './dtos/activity.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -23,10 +16,17 @@ export class ActivityController {
   @Get()
   @ApiOperation({
     summary: 'Get activities of a board',
-    description: 'Retrieve activity history for a board. Activities include all actions like card creation, updates, comments, member changes, etc. Supports filtering by action type, target type, and user.',
+    description:
+      'Retrieve activity history for a board. Activities include all actions like card creation, updates, comments, member changes, etc. Supports filtering by action type, target type, and user.',
   })
-  @ApiResponse({ status: 200, description: 'Successfully retrieved activities' })
-  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or expired token' })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully retrieved activities',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or expired token',
+  })
   @ApiResponse({ status: 404, description: 'Board not found' })
   async findAll(
     @Req() req: Request & { user: JwtPayload },
@@ -37,4 +37,3 @@ export class ActivityController {
     return this.activityService.findAll(boardId, userId, query);
   }
 }
-

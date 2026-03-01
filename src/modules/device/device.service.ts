@@ -20,10 +20,12 @@ export class DeviceService {
     });
   }
 
-  deleteByJti(jti: string): Promise<Device> {
-    return this.prisma.device.delete({
+  async deleteByJti(jti: string) {
+    await this.prisma.device.deleteMany({
       where: { jti },
     });
+
+    return true;
   }
 
   deleteExpired(): Promise<{ count: number }> {
