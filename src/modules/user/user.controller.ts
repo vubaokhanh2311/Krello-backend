@@ -18,6 +18,8 @@ import { PermissionGuard } from '../../common/guards/permission.guard';
 import { Permissions } from '../../common/decorators/permissions.decorator';
 import { PermissionEnum } from '../../constants/permissions.enum';
 import { UserService } from './user.service';
+import { ActivityService } from '../activity/activity.service';
+import { ActivityQueryDto } from '../activity/dtos/activity.dto';
 import {
   UpdateProfileDto,
   UpdateUserDto,
@@ -46,7 +48,10 @@ import { ApiSecurityAuth } from '../../common/decorators/swagger.decorator';
 @Controller('users')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly activityService: ActivityService,
+  ) {}
   @Get()
   @ApiOperation({
     summary: 'Get list of users',
@@ -67,6 +72,12 @@ export class UserController {
     return this.userService.findAll(query);
   }
 
+  @Get('stats')
+  @ApiOperation({ summary: 'Get profile statistics' })
+  async getMyStats(@Req() req: Request & { user: JwtPayload }) {
+    return this.userService.getMyStats(req.user.uid);
+  }
+
   @Get('profile')
   @ApiOperation({
     summary: 'Get current user profile',
@@ -83,6 +94,14 @@ export class UserController {
   })
   async getProfile(@Req() req: Request & { user: JwtPayload }) {
     return this.userService.getProfile(req.user.uid);
+  }
+
+  @Get('myActivities')
+  findMyActivities(
+    @Req() req: Request & { user: JwtPayload },
+    @Query() query: ActivityQueryDto,
+  ) {
+    return this.activityService.findMyActivities(req.user.uid, query);
   }
 
   @Put('profile')

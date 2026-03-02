@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards, Req } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards, Req, Put } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import {
   RegisterDto,
@@ -6,6 +6,7 @@ import {
   ForgotPasswordDto,
   LoginGoogleDto,
   ResetPasswordDto,
+  ChangePasswordDto,
 } from './dtos/auth.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { JwtTokenService } from './jwt-token.service';
@@ -133,5 +134,17 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Invalid or expired reset token' })
   async resetPassword(@Body() body: ResetPasswordDto) {
     return this.authService.resetPassword(body);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('change-password')
+  @ApiOperation({ summary: 'Change password (when logged in)' })
+  @ApiResponse({ status: 200, description: 'Password changed successfully' })
+  @ApiResponse({ status: 400, description: 'Old password incorrect' })
+  async changePassword(
+    @Req() req: Request & { user: JwtPayload },
+    @Body() body: ChangePasswordDto,
+  ) {
+    return this.authService.changePassword(req.user.uid, body);
   }
 }

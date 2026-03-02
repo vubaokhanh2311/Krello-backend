@@ -11,6 +11,7 @@ import {
   ForgotPasswordDto,
   ResetPasswordDto,
   LoginGoogleDto,
+  ChangePasswordDto,
 } from './dtos/auth.dto';
 import * as bcrypt from 'bcrypt';
 import { randomBytes, createHash } from 'crypto';
@@ -364,5 +365,40 @@ export class AuthService {
     return {
       message: SUCCESS_MESSAGES.COMMON.SUCCESS,
     };
+  }
+
+  async changePassword(userId: string, body: ChangePasswordDto) {
+    const { oldPassword, newPassword } = body;
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new BadRequestException(ERROR_MESSAGES.USER.NOT_FOUND);
+    }
+
+    const isMatch = await bcrypt.compare(
+      oldPassword + user.salt,
+      user.password,
+    );
+
+    if (!isMatch) {
+      throw new BadRequestException('Old password is incorrect');
+    }
+
+    const newSalt = randomBytes(5).toString('hex');
+
+    const hashedPassword = await bcrypt.hash(newPassword + newSalt, 10);
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        password: hashedPassword,
+        salt: newSalt,
+      },
+    });
+
+    return { message: 'Password changed successfully' };
   }
 }
