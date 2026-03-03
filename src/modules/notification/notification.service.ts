@@ -14,16 +14,41 @@ export class NotificationService {
   private async send(tokens: string[], payload: NotifyPayload) {
     if (!tokens.length) return;
 
-    const message: MulticastMessage = {
-      tokens,
-      notification: {
-        title: payload.title,
-        body: payload.body,
-      },
-      data: payload.data,
+    // Merge data + title + body
+    const rawData = {
+      title: payload.title,
+      body: payload.body,
+      ...(payload.data ?? {}),
     };
 
-    await this.firebase.messaging().sendEachForMulticast(message);
+    // Convert all values to string
+    const data: Record<string, string> = {};
+    for (const [key, value] of Object.entries(rawData)) {
+      data[key] = String(value);
+    }
+
+    const message: MulticastMessage = {
+      tokens,
+      data,
+
+      // IMPORTANT: Web FCM requires webpush config
+      webpush: {
+        headers: {
+          Urgency: 'high',
+        },
+        notification: {
+          title: data.title,
+          body: data.body,
+          icon: '/logo.png',
+        },
+      },
+    };
+
+    const res = await this.firebase.messaging().sendEachForMulticast(message);
+
+    console.log('🔥 FCM TOKENS:', tokens);
+    console.log('🔥 FCM PAYLOAD:', message);
+    console.log('🔥 FCM RESPONSE:', JSON.stringify(res, null, 2));
   }
 
   async notifyUser(userId: string, payload: NotifyPayload) {
