@@ -223,4 +223,18 @@ export class UserService {
       tasksCreated,
     };
   }
+
+  async updateFcmToken(userId: string, fcmToken: string) {
+    if (!userId || !fcmToken) {
+      throw new BadRequestException('FCM Token is required');
+    }
+
+    await this.prisma.device.updateMany({
+      where: { userId },
+      data: { fcmToken },
+    });
+
+    return { message: 'FCM Token updated successfully' };
+  }
 }
+

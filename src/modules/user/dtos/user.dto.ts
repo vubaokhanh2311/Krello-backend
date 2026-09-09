@@ -37,6 +37,17 @@ export class UpdateAvatarDto {
   avatarUrl: string;
 }
 
+export class UpdateFcmTokenDto {
+  @ApiProperty({
+    example: 'fcm_token_example',
+    description: 'Firebase FCM registration token',
+  })
+  @IsNotEmpty()
+  @IsString()
+  fcmToken: string;
+}
+
+
 export class UpdateUserDto {
   @ApiPropertyOptional({
     example: 'Nguyen Van A',

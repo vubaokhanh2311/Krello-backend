@@ -26,6 +26,7 @@ import {
   CreateUserDto,
   UserQueryDto,
   UpdateAvatarDto,
+  UpdateFcmTokenDto,
 } from './dtos/user.dto';
 
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -124,6 +125,22 @@ export class UserController {
   ) {
     return this.userService.updateProfile(req.user.uid, dto);
   }
+
+  @Post('fcm-token')
+  @ApiOperation({
+    summary: 'Sync/Update FCM Token',
+    description: 'Update the Firebase Cloud Messaging registration token for user active devices.',
+  })
+  @ApiBody({ type: UpdateFcmTokenDto })
+  @ApiResponse({ status: 200, description: 'FCM token successfully updated' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async updateFcmToken(
+    @Req() req: Request & { user: JwtPayload },
+    @Body() dto: UpdateFcmTokenDto,
+  ) {
+    return this.userService.updateFcmToken(req.user.uid, dto.fcmToken);
+  }
+
 
   @Patch('avatar')
   @ApiOperation({

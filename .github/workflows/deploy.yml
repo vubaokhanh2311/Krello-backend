@@ -7,40 +7,47 @@ on:
 
 jobs:
   deploy:
+    name: Deploy to Development Server
     runs-on: self-hosted
 
     steps:
       - name: Deploy backend via SSH
         run: |
-          ssh be_vm << 'EOF'
+          ssh -o StrictHostKeyChecking=no be_vm << 'EOF'
             set -e
 
+            # Source NVM environment
             export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
-            echo "Node version:"
-            which node
+            echo "=== Node Environment ==="
             node -v
             npm -v
 
             cd /home/krello/krello-server
 
-            echo "Sync code"
-            git fetch origin
+            echo "=== Syncing Latest Code ==="
+            git fetch origin dev
             git checkout dev
             git reset --hard origin/dev
 
-            echo "Install deps"
+            echo "=== Installing Dependencies ==="
             npm ci
 
-            echo "Prisma"
+            echo "=== Prisma Generate & Migrate ==="
             npx prisma generate
             npx prisma migrate deploy
 
-            echo "Build"
+            echo "=== Building Application ==="
             npm run build
 
-            echo "Restart PM2"
-            pm2 restart krello-api
+            echo "=== Reloading PM2 (Zero-Downtime) ==="
+            if pm2 describe krello-api > /dev/null 2>&1; then
+              pm2 reload krello-api --update-env
+            else
+              pm2 start dist/main.js --name krello-api
+            fi
             pm2 save
+
+            echo "=== Deployment Completed Successfully ==="
           EOF
