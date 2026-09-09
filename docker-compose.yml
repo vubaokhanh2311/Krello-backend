@@ -1,26 +1,39 @@
-version: '3.9'
-
 services:
   postgres:
-    image: postgres:15
-    container_name: my_postgres
+    image: postgres:15-alpine
+    container_name: krello-postgres
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: trello
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-123456}
+      POSTGRES_DB: ${POSTGRES_DB:-trello}
     ports:
       - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-trello}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
-    image: redis:7
-    container_name: my_redis
+    image: redis:7-alpine
+    container_name: krello-redis
+    restart: unless-stopped
+    command: redis-server --save 60 1 --loglevel warning --appendonly yes
     ports:
       - '6379:6379'
-    command: redis-server --save 60 1 --loglevel warning
-    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
+    driver: local
+  redis_data:
+    driver: local

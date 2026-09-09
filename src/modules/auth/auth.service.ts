@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
 import {
   HttpException,
   HttpStatus,
@@ -62,18 +63,23 @@ export class AuthService {
     }
 
     const salt = randomBytes(5).toString('hex');
-    const hashedPassword = await bcrypt.hash(userData.password + salt, 10);
+    const hashedPassword = (await bcrypt.hash(
+      userData.password + salt,
+      10,
+    )) as string;
 
     const newUser = await this.prisma.user.create({
       data: {
         ...userData,
-        password: hashedPassword as string,
+        password: hashedPassword,
         salt,
       },
     });
 
-    const { password, salt: _, ...safeUser } = newUser;
-    return safeUser;
+    const safeUser = { ...newUser } as Partial<User>;
+    delete safeUser.password;
+    delete safeUser.salt;
+    return safeUser as Omit<User, 'password' | 'salt'>;
   }
 
   async login(dto: LoginDto) {
@@ -97,7 +103,10 @@ export class AuthService {
       );
     }
 
-    const isMatch = await bcrypt.compare(password + user.salt, user.password);
+    const isMatch = await bcrypt.compare(
+      password + (user.salt ?? ''),
+      user.password ?? '',
+    );
     if (!isMatch) {
       throw new HttpException(
         ERROR_MESSAGES.AUTH.INVALID_PASSWORD,
@@ -347,7 +356,10 @@ export class AuthService {
     }
 
     const salt = user.salt || randomBytes(5).toString('hex');
-    const hashedPassword = await bcrypt.hash(newPassword + salt, 10);
+    const hashedPassword = (await bcrypt.hash(
+      newPassword + salt,
+      10,
+    )) as string;
 
     await this.prisma.$transaction([
       this.prisma.user.update({
@@ -379,8 +391,8 @@ export class AuthService {
     }
 
     const isMatch = await bcrypt.compare(
-      oldPassword + user.salt,
-      user.password,
+      oldPassword + (user.salt ?? ''),
+      user.password ?? '',
     );
 
     if (!isMatch) {
@@ -389,7 +401,10 @@ export class AuthService {
 
     const newSalt = randomBytes(5).toString('hex');
 
-    const hashedPassword = await bcrypt.hash(newPassword + newSalt, 10);
+    const hashedPassword = (await bcrypt.hash(
+      newPassword + newSalt,
+      10,
+    )) as string;
 
     await this.prisma.user.update({
       where: { id: userId },

@@ -82,4 +82,3 @@ export class CreateActivityDto {
   boardId: string;
   userId: string;
 }
-

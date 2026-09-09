@@ -12,11 +12,15 @@ import { JwtService } from '@nestjs/jwt';
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { RedisService } from '../../shared/redis/redis.service';
+import { PrismaService } from '../../shared/prisma/prisma.service';
+import { checkBoardAccess } from '../../common/utils/index';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 @WebSocketGateway({
   cors: {
-    origin: process.env.FRONTEND_URL,
+    origin: process.env.FRONTEND_URL
+      ? process.env.FRONTEND_URL.split(',').map((o) => o.trim())
+      : true,
     credentials: true,
   },
 })
@@ -30,13 +34,14 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly redisService: RedisService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async handleConnection(client: Socket) {
     try {
+      const auth = client.handshake.auth as { token?: string };
       const token =
-        client.handshake.auth?.token ||
-        client.handshake.headers.authorization?.split(' ')[1];
+        auth?.token || client.handshake.headers.authorization?.split(' ')[1];
 
       if (!token) {
         this.logger.warn('Connection without token');
@@ -62,7 +67,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       await this.redisService.set(`socket:client:${socketId}`, userId);
 
-      client.join(`user:${userId}`);
+      void client.join(`user:${userId}`);
 
       const socketCount = await this.redisService.scard(
         `socket:user:${userId}`,
@@ -75,7 +80,8 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       this.logger.log(`Client connected: ${socketId} (User: ${userId})`);
     } catch (error) {
-      this.logger.error(`Connection error: ${error.message}`);
+      const err = error as Error;
+      this.logger.error(`Connection error: ${err.message}`);
       client.disconnect();
     }
   }
@@ -105,14 +111,27 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('board:join')
-  handleJoinBoard(
+  async handleJoinBoard(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { boardId: string },
   ) {
     if (!data?.boardId) return;
 
-    client.join(`board:${data.boardId}`);
-    this.logger.log(`Client ${client.id} joined board ${data.boardId}`);
+    const userId = await this.redisService.get(`socket:client:${client.id}`);
+    if (!userId) return;
+
+    try {
+      await checkBoardAccess(this.prisma, data.boardId, userId);
+      void client.join(`board:${data.boardId}`);
+      this.logger.log(
+        `Client ${client.id} (User ${userId}) joined board ${data.boardId}`,
+      );
+    } catch {
+      this.logger.warn(
+        `Unauthorized board:join attempt by user ${userId} for board ${data.boardId}`,
+      );
+      client.emit('error', { message: 'Access denied to board' });
+    }
   }
 
   @SubscribeMessage('board:leave')
@@ -122,7 +141,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     if (!data?.boardId) return;
 
-    client.leave(`board:${data.boardId}`);
+    void client.leave(`board:${data.boardId}`);
   }
 
   emitToBoard(boardId: string, event: string, data: any) {

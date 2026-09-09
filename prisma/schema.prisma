@@ -100,6 +100,8 @@ model Board {
   activities      Activity[]
   messages        BoardMessage[]
   BoardInvitation BoardInvitation[]
+
+  @@index([ownerId])
 }
 
 model BoardMember {
@@ -134,6 +136,9 @@ model BoardInvitation {
   expiresAt   DateTime
   invitedById String
   invitedBy   User         @relation(fields: [invitedById], references: [id])
+
+  @@index([boardId])
+  @@index([email])
 }
 
 enum InviteStatus {
@@ -154,6 +159,8 @@ model List {
   board   Board  @relation(fields: [boardId], references: [id])
 
   cards Card[]
+
+  @@index([boardId])
 }
 
 model Card {
@@ -176,6 +183,9 @@ model Card {
   checklists  Checklist[]
   labels      CardLabel[]
   members     CardMember[]
+
+  @@index([listId])
+  @@index([createdBy])
 }
 
 model CardMember {
@@ -201,6 +211,8 @@ model Label {
   board     Board    @relation(fields: [boardId], references: [id])
 
   cards CardLabel[]
+
+  @@index([boardId])
 }
 
 model CardLabel {
@@ -220,6 +232,8 @@ model Checklist {
 
   cardId String
   card   Card   @relation(fields: [cardId], references: [id])
+
+  @@index([cardId])
 }
 
 model Attachment {
@@ -234,6 +248,9 @@ model Attachment {
 
   cardId String
   card   Card   @relation(fields: [cardId], references: [id])
+
+  @@index([cardId])
+  @@index([uploadedBy])
 }
 
 model Comment {
@@ -247,6 +264,9 @@ model Comment {
 
   userId String
   user   User   @relation(fields: [userId], references: [id])
+
+  @@index([cardId])
+  @@index([userId])
 }
 
 model Activity {
@@ -261,6 +281,9 @@ model Activity {
 
   userId String
   user   User   @relation(fields: [userId], references: [id])
+
+  @@index([boardId])
+  @@index([userId])
 }
 
 model BoardMessage {
@@ -275,6 +298,8 @@ model BoardMessage {
 
   userId String
   user   User   @relation(fields: [userId], references: [id])
+
+  @@index([boardId])
 }
 
 enum MessageType {
@@ -292,6 +317,8 @@ model Notification {
 
   userId String
   user   User   @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }
 
 model Device {

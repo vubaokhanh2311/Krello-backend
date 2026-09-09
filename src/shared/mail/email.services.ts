@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
 import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 
@@ -17,7 +18,12 @@ export class EmailService {
     });
   }
 
-  async sendMail(to: string, subject: string, text: string, html?: string) {
+  async sendMail(
+    to: string,
+    subject: string,
+    text: string,
+    html?: string,
+  ): Promise<nodemailer.SentMessageInfo> {
     const mailOptions = {
       from: `"Krello" <${process.env.EMAIL_USERNAME}>`,
       to,
@@ -27,7 +33,9 @@ export class EmailService {
     };
 
     try {
-      const info: string = await this.transporter.sendMail(mailOptions);
+      const info = (await this.transporter.sendMail(
+        mailOptions,
+      )) as nodemailer.SentMessageInfo;
       return info;
     } catch (error) {
       console.error('Error sending email:', error);

@@ -5,7 +5,7 @@ import {
   ERROR_MESSAGES,
   SUCCESS_MESSAGES,
   ROLETYPE,
-} from 'src/constants/index';
+} from '../../constants/index';
 
 import { checkBoardAccess } from '../../common/utils/index';
 import { SocketEventsService } from '../socket/socket-events.service';

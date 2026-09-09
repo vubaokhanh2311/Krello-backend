@@ -7,6 +7,7 @@ export class RedisService extends Redis implements OnModuleDestroy {
     super({
       host: process.env.REDIS_HOST || '127.0.0.1',
       port: Number(process.env.REDIS_PORT) || 6379,
+      db: Number(process.env.REDIS_DB) || 0,
     });
   }
 
@@ -20,7 +21,7 @@ export class RedisService extends Redis implements OnModuleDestroy {
    * @param value Data to be saved (object, array, string...)
    * @param ttl Lifetime (seconds)
    */
-  async setCache(key: string, value: any, ttl?: number): Promise<void> {
+  async setCache<T>(key: string, value: T, ttl?: number): Promise<void> {
     const jsonValue = JSON.stringify(value);
     if (ttl) {
       await this.set(key, jsonValue, 'EX', ttl);
@@ -29,9 +30,9 @@ export class RedisService extends Redis implements OnModuleDestroy {
     }
   }
 
-  async getCache<T = any>(key: string): Promise<T | null> {
+  async getCache<T = unknown>(key: string): Promise<T | null> {
     const data = await this.get(key);
-    return data ? JSON.parse(data) : null;
+    return data ? (JSON.parse(data) as T) : null;
   }
 
   async delCache(key: string): Promise<void> {

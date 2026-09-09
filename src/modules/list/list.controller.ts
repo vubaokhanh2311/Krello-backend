@@ -26,10 +26,14 @@ export class ListController {
   @Get('lists')
   @ApiOperation({
     summary: 'Get list of lists',
-    description: 'Retrieve all lists within a specific board, with optional filtering and pagination.',
+    description:
+      'Retrieve all lists within a specific board, with optional filtering and pagination.',
   })
   @ApiResponse({ status: 200, description: 'Successfully retrieved lists' })
-  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or expired token' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or expired token',
+  })
   @ApiResponse({ status: 404, description: 'Board not found' })
   async findAll(
     @Req() req: Request & { user: JwtPayload },
@@ -42,11 +46,15 @@ export class ListController {
   @Post('lists')
   @ApiOperation({
     summary: 'Create list',
-    description: 'Create a new list within a board. The list will be positioned at the end by default.',
+    description:
+      'Create a new list within a board. The list will be positioned at the end by default.',
   })
   @ApiResponse({ status: 201, description: 'List successfully created' })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
-  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or expired token' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or expired token',
+  })
   @ApiResponse({ status: 404, description: 'Board not found' })
   async create(
     @Req() req: Request & { user: JwtPayload },
@@ -60,11 +68,18 @@ export class ListController {
   @Put('lists/:listId')
   @ApiOperation({
     summary: 'Update list',
-    description: 'Update list title. User must have editor or owner role in the board.',
+    description:
+      'Update list title. User must have editor or owner role in the board.',
   })
   @ApiResponse({ status: 200, description: 'List successfully updated' })
-  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or expired token' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Insufficient permissions' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or expired token',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Insufficient permissions',
+  })
   @ApiResponse({ status: 404, description: 'List not found' })
   async update(
     @Req() req: Request & { user: { uid: string } },
@@ -79,11 +94,18 @@ export class ListController {
   @Delete('lists/:listId')
   @ApiOperation({
     summary: 'Delete list',
-    description: 'Permanently delete a list and all its cards. User must have editor or owner role in the board.',
+    description:
+      'Permanently delete a list and all its cards. User must have editor or owner role in the board.',
   })
   @ApiResponse({ status: 200, description: 'List successfully deleted' })
-  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or expired token' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Insufficient permissions' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or expired token',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Insufficient permissions',
+  })
   @ApiResponse({ status: 404, description: 'List not found' })
   async remove(
     @Req() req: Request & { user: JwtPayload },

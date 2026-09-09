@@ -32,6 +32,8 @@ import { SocketEventsService } from '../socket/socket-events.service';
 import { ActivityService } from '../activity/activity.service';
 import { NotificationService } from '../notification/notification.service';
 
+import { Prisma } from '@prisma/client';
+
 @Injectable()
 export class BoardService {
   constructor(
@@ -45,7 +47,7 @@ export class BoardService {
   async findAll(userId: string, query: BoardQueryDto) {
     const { page, pageSize, skip, take } = getPagination(query);
 
-    const where: any = { ownerId: userId };
+    const where: Prisma.BoardWhereInput = { ownerId: userId };
     if (query.name) {
       where.name = { contains: query.name, mode: 'insensitive' };
     }
@@ -217,7 +219,7 @@ export class BoardService {
           boardId,
         },
       });
-      this.activityService.logBoardMemberAdded(boardId, user.id, ownerId);
+      void this.activityService.logBoardMemberAdded(boardId, user.id, ownerId);
     }
 
     return { message: SUCCESS_MESSAGES.BOARD.EMAIL_SENT };
@@ -230,7 +232,7 @@ export class BoardService {
 
     if (!invite)
       throw new NotFoundException(ERROR_MESSAGES.INVITATION.NOT_FOUND);
-    if (invite.status !== INVITESTATUS.PENDING)
+    if (String(invite.status) !== String(INVITESTATUS.PENDING))
       throw new BadRequestException(ERROR_MESSAGES.INVITATION.ALREADY_HANDLED);
     if (invite.expiresAt < new Date())
       throw new BadRequestException(ERROR_MESSAGES.INVITATION.EXPIRED);
@@ -357,7 +359,7 @@ export class BoardService {
     });
     if (!member) throw new NotFoundException(ERROR_MESSAGES.BOARD.NOT_MEMBER);
 
-    const updated = await this.prisma.boardMember.update({
+    await this.prisma.boardMember.update({
       where: { id: member.id },
       data: { role },
     });

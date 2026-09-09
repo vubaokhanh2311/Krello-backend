@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import {
   ActivityQueryDto,
@@ -27,7 +27,7 @@ export class ActivityService {
 
     await checkBoardAccess(this.prisma, boardId, userId);
 
-    const where: any = { boardId };
+    const where: Record<string, unknown> = { boardId };
 
     if (query.action) {
       where.action = query.action;
@@ -82,7 +82,7 @@ export class ActivityService {
   async findMyActivities(userId: string, query: ActivityQueryDto) {
     const { page, pageSize, skip, take } = getPagination(query);
 
-    const where: any = {
+    const where: Record<string, unknown> = {
       userId,
     };
 
@@ -260,7 +260,7 @@ export class ActivityService {
 
   async logCommentCreated(
     boardId: string,
-    cardId: string,
+    _cardId: string,
     commentId: string,
     userId: string,
   ) {
@@ -275,7 +275,7 @@ export class ActivityService {
 
   async logCommentUpdated(
     boardId: string,
-    cardId: string,
+    _cardId: string,
     commentId: string,
     userId: string,
   ) {
@@ -290,7 +290,7 @@ export class ActivityService {
 
   async logCommentDeleted(
     boardId: string,
-    cardId: string,
+    _cardId: string,
     commentId: string,
     userId: string,
   ) {
@@ -305,7 +305,7 @@ export class ActivityService {
 
   async logAttachmentAdded(
     boardId: string,
-    cardId: string,
+    _cardId: string,
     attachmentId: string,
     userId: string,
   ) {
@@ -320,7 +320,7 @@ export class ActivityService {
 
   async logAttachmentDeleted(
     boardId: string,
-    cardId: string,
+    _cardId: string,
     attachmentId: string,
     userId: string,
   ) {

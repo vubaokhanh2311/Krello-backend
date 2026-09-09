@@ -44,7 +44,15 @@ export class NotificationService {
       },
     };
 
-    const res = await this.firebase.messaging().sendEachForMulticast(message);
+    const messaging = this.firebase.messaging();
+    if (!messaging) {
+      console.log(
+        '🔥 Firebase Messaging not initialized (placeholders used). Skipping push notification.',
+      );
+      return;
+    }
+
+    const res = await messaging.sendEachForMulticast(message);
 
     console.log('🔥 FCM TOKENS:', tokens);
     console.log('🔥 FCM PAYLOAD:', message);

@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import {
   LabelQueryDto,
   CreateLabelDto,
@@ -10,7 +11,7 @@ import {
   SUCCESS_MESSAGES,
   ROLETYPE,
   ERROR_MESSAGES,
-} from 'src/constants/index';
+} from '../../constants/index';
 
 import {
   getPagination,
@@ -35,7 +36,7 @@ export class LabelService {
 
     await checkBoardAccess(this.prisma, boardId, userId);
 
-    const where: any = { boardId };
+    const where: Prisma.LabelWhereInput = { boardId };
 
     if (query.name) {
       where.name = { contains: query.name, mode: 'insensitive' };

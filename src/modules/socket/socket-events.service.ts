@@ -23,7 +23,10 @@ export class SocketEventsService {
     });
   }
 
-  emitMemberAdded(boardId: string, data: any) {
+  emitMemberAdded(
+    boardId: string,
+    data: Record<string, unknown> & { userId: string },
+  ) {
     this.socketGateway.emitToBoard(
       boardId,
       SOCKET_EVENTS.BOARD_MEMBER_ADDED,
@@ -35,7 +38,10 @@ export class SocketEventsService {
     });
   }
 
-  emitMemberRemoved(boardId: string, data: any) {
+  emitMemberRemoved(
+    boardId: string,
+    data: Record<string, unknown> & { userId: string },
+  ) {
     this.socketGateway.emitToBoard(
       boardId,
       SOCKET_EVENTS.BOARD_MEMBER_REMOVED,
@@ -100,7 +106,11 @@ export class SocketEventsService {
     this.socketGateway.emitToBoard(boardId, SOCKET_EVENTS.CARD_MOVED, data);
   }
 
-  emitCardMemberAdded(boardId: string, cardId: string, data: any) {
+  emitCardMemberAdded(
+    boardId: string,
+    cardId: string,
+    data: Record<string, unknown> & { userId: string },
+  ) {
     this.socketGateway.emitToBoard(boardId, SOCKET_EVENTS.CARD_MEMBER_ADDED, {
       cardId,
       ...data,

@@ -4,12 +4,13 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 
 import {
   SUCCESS_MESSAGES,
   ROLETYPE,
   ERROR_MESSAGES,
-} from 'src/constants/index';
+} from '../../constants/index';
 
 import {
   getPagination,
@@ -55,7 +56,7 @@ export class AttachmentService {
 
     await checkBoardAccess(this.prisma, card.list.boardId, userId);
 
-    const where: any = { cardId };
+    const where: Prisma.AttachmentWhereInput = { cardId };
 
     if (query.fileName) {
       where.fileName = { contains: query.fileName, mode: 'insensitive' };

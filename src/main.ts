@@ -5,6 +5,7 @@ import { join } from 'path';
 import { setupSwagger } from '../src/utils/swagger';
 import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import helmet from 'helmet';
 import { RequestHandler } from 'express';
 import { IAppConfig } from './config/config.types.ts';
@@ -47,6 +48,8 @@ async function bootstrap() {
       transformOptions: { enableImplicitConversion: true },
     }),
   );
+
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   const swaggerLogger = setupSwagger(app, configService);
   app.useStaticAssets(join(process.cwd(), 'public', 'uploads'), {

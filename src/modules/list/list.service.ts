@@ -1,5 +1,6 @@
 import { Injectable, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import { CreateListDto, UpdateListDto, ListQueryDto } from './dtos/list.dto';
 import { ROLETYPE } from '../../constants/role-type.constant';
 import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '../../constants/index';
@@ -26,7 +27,7 @@ export class ListService {
 
     await checkBoardAccess(this.prisma, boardId, userId);
 
-    const where: any = { boardId };
+    const where: Prisma.ListWhereInput = { boardId };
 
     if (query.title) {
       where.title = { contains: query.title, mode: 'insensitive' };

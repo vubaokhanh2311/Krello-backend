@@ -4,6 +4,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import {
   CommentQueryDto,
   CreateCommentDto,
@@ -53,7 +54,7 @@ export class CommentService {
 
     await checkBoardAccess(this.prisma, card.list.boardId, userId);
 
-    const where: any = { cardId };
+    const where: Prisma.CommentWhereInput = { cardId };
 
     if (query.content) {
       where.content = { contains: query.content, mode: 'insensitive' };

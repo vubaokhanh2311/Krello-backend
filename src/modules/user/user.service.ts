@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
 import {
   Injectable,
   NotFoundException,
@@ -5,6 +6,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import { ERROR_MESSAGES } from '../../constants/error-messages.constant';
 import { UpdateAvatarDto } from './dtos/user.dto';
 import * as bcrypt from 'bcrypt';
@@ -62,7 +64,7 @@ export class UserService {
   async findAll(query: UserQueryDto) {
     const { page, pageSize, skip, take } = getPagination(query);
 
-    const where: any = {};
+    const where: Prisma.UserWhereInput = {};
     if (query.name) {
       where.name = { contains: query.name, mode: 'insensitive' };
     }
@@ -125,12 +127,15 @@ export class UserService {
       throw new ForbiddenException(ERROR_MESSAGES.USER.EMAIL_ALREADY_EXISTS);
     }
     const salt = randomBytes(5).toString('hex');
-    const hashedPassword = await bcrypt.hash(dto.password + salt, 10);
+    const hashedPassword = (await bcrypt.hash(
+      dto.password + salt,
+      10,
+    )) as string;
 
     return this.prisma.user.create({
       data: {
         ...dto,
-        password: hashedPassword as string,
+        password: hashedPassword,
         salt,
       },
       select: {
@@ -175,7 +180,8 @@ export class UserService {
 
       return updatedUser;
     } catch (error) {
-      if (error.code === 'P2025') {
+      const err = error as { code?: string };
+      if (err.code === 'P2025') {
         throw new NotFoundException(ERROR_MESSAGES.USER.NOT_FOUND_UPDATE);
       }
       throw error;
@@ -186,7 +192,7 @@ export class UserService {
     try {
       await this.prisma.user.delete({ where: { id } });
       return { deleted: true };
-    } catch (error) {
+    } catch {
       throw new NotFoundException(ERROR_MESSAGES.USER.NOT_FOUND_DELETE);
     }
   }

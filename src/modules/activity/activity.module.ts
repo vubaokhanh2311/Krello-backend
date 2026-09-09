@@ -10,4 +10,3 @@ import { SocketModule } from '../socket/socket.module';
   exports: [ActivityService],
 })
 export class ActivityModule {}
-

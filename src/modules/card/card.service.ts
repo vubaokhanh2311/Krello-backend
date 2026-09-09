@@ -16,6 +16,8 @@ import {
 import { SocketEventsService } from '../socket/socket-events.service';
 import { ActivityService } from '../activity/activity.service';
 
+import { Prisma } from '@prisma/client';
+
 @Injectable()
 export class CardService {
   constructor(
@@ -38,7 +40,7 @@ export class CardService {
 
     await checkBoardAccess(this.prisma, list.board.id, userId);
 
-    const where: any = { listId };
+    const where: Prisma.CardWhereInput = { listId };
     if (query.title)
       where.title = { contains: query.title, mode: 'insensitive' };
     if (query.dueDate) where.dueDate = { equals: new Date(query.dueDate) };
@@ -190,7 +192,7 @@ export class CardService {
       ROLETYPE.EDITOR,
     ]);
 
-    const updateCardData: any = {};
+    const updateCardData: Prisma.CardUpdateInput = {};
 
     if (dto.title !== undefined) updateCardData.title = dto.title;
     if (dto.description !== undefined)
@@ -201,7 +203,7 @@ export class CardService {
       updateCardData.list = { connect: { id: dto.listId } };
     }
 
-    const transactionOps: any[] = [];
+    const transactionOps: Prisma.PrismaPromise<unknown>[] = [];
 
     if (dto.taskOrder && Array.isArray(dto.taskOrder)) {
       const reorderOps = dto.taskOrder.map((id, index) =>

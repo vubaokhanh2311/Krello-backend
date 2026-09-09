@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { CreateCardMenberDto } from './dtos/card-member.dto';
-import { ERROR_MESSAGES, SUCCESS_MESSAGES } from 'src/constants/index';
+import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '../../constants/index';
 
 import { checkBoardAccess } from '../../common/utils/index';
 import { SocketEventsService } from '../socket/socket-events.service';
