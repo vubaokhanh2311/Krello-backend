@@ -31,8 +31,7 @@ RUN npm ci --only=production
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-RUN mkdir -p public/uploads
-COPY --from=builder /app/public ./public
+RUN mkdir -p public/uploads/attachments public/uploads/avatars
 
 EXPOSE 3000
 
